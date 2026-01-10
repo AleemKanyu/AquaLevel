@@ -27,7 +27,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Tanker Dashboard"
+            android:text="Aqual Level"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -36,16 +36,6 @@
 
     </LinearLayout>
 
-
-    <!-- Tank Container -->
-
-    <!-- Liters -->
-
-    <!-- Capacity -->
-
-    <!-- Stats Cards -->
-
-    <!-- Button -->
 
     <ScrollView
         android:layout_width="0dp"
@@ -67,24 +57,39 @@
                 android:layout_width="240dp"
                 android:layout_height="320dp"
                 android:layout_marginTop="24dp"
-                android:background="@drawable/bg_tank">
+                android:background="@drawable/bg_tank"
+                android:clipChildren="true"
+                android:clipToPadding="true"
+                >
 
                 <!-- Water Level -->
-                <View
+                <FrameLayout
                     android:id="@+id/waterLevel"
                     android:layout_width="match_parent"
-                    android:layout_height="600px"
+                    android:layout_height="280dp"
                     android:layout_gravity="bottom"
-                    android:background="@drawable/bg_water" />
+                    android:background="@drawable/bg_water"
+                    android:clipChildren="true"
+                    android:clipToPadding="true">
+
+
+
+
+
+                </FrameLayout>
+
 
                 <!-- Percentage -->
                 <TextView
+                    android:id="@+id/percentage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="65%"
+                    android:shadowColor="@color/black"
+                    android:text="100%"
                     android:textColor="@android:color/white"
                     android:textSize="42sp"
+
                     android:textStyle="bold" />
 
             </FrameLayout>
@@ -99,7 +104,8 @@
                 android:id="@+id/Capcity"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center">
+                android:layout_gravity="center"
+                android:textAlignment="center">
 
                 <TextView
                     android:id="@+id/textView"
@@ -110,11 +116,12 @@
                     android:textSize="14sp" />
 
                 <TextView
-                    android:id="@+id/litersText"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/capacityValue"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
                     android:text="1,300 Liters"
+                    android:textAlignment="center"
                     android:textColor="@android:color/white"
                     android:textSize="26sp"
                     android:textStyle="bold" />
@@ -158,6 +165,7 @@
                         android:textSize="12sp" />
 
                     <TextView
+                        android:id="@+id/usageValue"
                         android:layout_width="200px"
                         android:layout_height="50px"
                         android:text="45L / Day"
@@ -217,7 +225,7 @@
     <!-- Center Floating Button -->
 
     <LinearLayout
-        android:id="@+id/linearLayout"
+        android:id="@+id/history"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="84dp"
@@ -244,6 +252,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/alerts"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="32dp"
@@ -253,7 +262,7 @@
         app:layout_constraintBottom_toBottomOf="@id/bottomBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.773"
-        app:layout_constraintStart_toEndOf="@+id/linearLayout">
+        app:layout_constraintStart_toEndOf="@+id/history">
 
         <ImageView
             android:layout_width="24dp"
@@ -281,6 +290,7 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
+            android:id="@+id/buttonCheck"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_gravity="center"
