@@ -66,7 +66,7 @@
                 <FrameLayout
                     android:id="@+id/waterLevel"
                     android:layout_width="match_parent"
-                    android:layout_height="280dp"
+                    android:layout_height="150dp"
                     android:layout_gravity="bottom"
                     android:background="@drawable/bg_water"
                     android:clipChildren="true"
@@ -86,7 +86,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:shadowColor="@color/black"
-                    android:text="100%"
+                    android:text="45%"
                     android:textColor="@android:color/white"
                     android:textSize="42sp"
 

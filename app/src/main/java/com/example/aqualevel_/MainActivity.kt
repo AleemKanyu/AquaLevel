@@ -17,6 +17,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -25,6 +29,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var usageValue: TextView
     private lateinit var percentage: TextView
     lateinit var waterLevel: FrameLayout
+    var waterReading=mutableMapOf<Any,Any>()
+
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +43,14 @@ class MainActivity : AppCompatActivity() {
             insets
 
         }
+        button = findViewById(R.id.buttonCheck)
+        capacityValue = findViewById(R.id.capacityValue)
+        usageValue = findViewById(R.id.usageValue)
+        percentage = findViewById(R.id.percentage)
+        waterLevel = findViewById(R.id.waterLevel)
+
+
+
         val tankContainer = findViewById<FrameLayout>(R.id.tankContainer)
 
         tankContainer.post {
@@ -75,17 +90,6 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-
-        button = findViewById(R.id.buttonCheck)
-        capacityValue = findViewById(R.id.capacityValue)
-        usageValue = findViewById(R.id.usageValue)
-        percentage = findViewById(R.id.percentage)
-        waterLevel = findViewById(R.id.waterLevel)
-
-
-
-
-
         button.setOnClickListener {
             val value = checkLevel()
             val per = (value / 2000) * 100
@@ -98,9 +102,10 @@ class MainActivity : AppCompatActivity() {
             waterLevel.layoutParams = params
 
             updateWaterCorners(per)
+
+
         }
     }
-
 
 }
 
