@@ -19,11 +19,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-
+import java.time.LocalDate
+import kotlin.collections.mutableMapOf
+import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,25 +36,35 @@ class MainActivity : AppCompatActivity() {
     private lateinit var usageValue: TextView
     private lateinit var percentage: TextView
     lateinit var waterLevel: FrameLayout
+    private lateinit var tankContainer: FrameLayout
+    private var value by Delegates.notNull<Double>()
+    private lateinit var todayKey: String
     private val level: String = "Water_Level"
-    private var timing: String = "Time_Stamp"
+    private var date: String = "Date"
     private lateinit var listner: ListenerRegistration
-
+    val today: LocalDate = LocalDate.now()
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val history: FirebaseFirestore= FirebaseFirestore.getInstance()
+    private val recents=history.collection("History").document("Water Levels")
+    private val docRef = db.collection("Current Water Level").document("Current Reading")
     var waterReading = mutableMapOf<String, Any>()
+    val dailyData = mutableMapOf<String, MutableList<Double>>()
+
     override fun onStart() {
         super.onStart()
-       listner= docRef.addSnapshotListener(this) {document,error ->
-            error?.let{
+        listner = docRef.addSnapshotListener(this) { document, error ->
+            error?.let {
                 return@addSnapshotListener
             }
-            document?.let{
+            document?.let {
                 docRef.get()
                     .addOnSuccessListener { it ->
                         if (it.exists()) {
-                            val level = it.getString(level)
-                            capacityValue.text = "${level?.toInt()} Litres"
-                        }else{
-                            Toast.makeText(this, "Failed to retrieve data", Toast.LENGTH_SHORT).show()
+                            val level = it.getDouble(level)
+                            capacityValue.text = "${level} Litres"
+                        } else {
+                            Toast.makeText(this, "Failed to retrieve data", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
                     .addOnFailureListener {
@@ -61,12 +75,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-//    override fun onStop() {
-//        super.onStop()                 we use this keyword inside the addSnapshotListener function
-//        listner.remove()
-//    }
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val docRef = db.collection("Hello").document("Second_Reading")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,10 +91,7 @@ class MainActivity : AppCompatActivity() {
         usageValue = findViewById(R.id.usageValue)
         percentage = findViewById(R.id.percentage)
         waterLevel = findViewById(R.id.waterLevel)
-
-
-
-        val tankContainer = findViewById<FrameLayout>(R.id.tankContainer)
+        tankContainer = findViewById(R.id.tankContainer)
 
         tankContainer.post {
             val handler = Handler(mainLooper)
@@ -126,11 +131,10 @@ class MainActivity : AppCompatActivity() {
 
 
         button.setOnClickListener {
-            val value = checkLevel()
+            value = checkLevel()
             val per = (value / 2000) * 100
 
             percentage.text = "${per.toInt()}%"
-            getData()
             val params = waterLevel.layoutParams
             val height = (320 * per) / 100
             params.height = dpToPx(this, height.toInt())
@@ -138,15 +142,29 @@ class MainActivity : AppCompatActivity() {
 
             updateWaterCorners(per)
 
-            waterReading.put(level, "1000")
-            waterReading.put(timing, "11:00AM")
+            todayKey = LocalDate.now().toString()
+            waterReading.put(level, value)
+            waterReading.put(date, todayKey)
 
-
+            sendData()
         }
     }
 
     private fun sendData() {
         docRef.set(waterReading).addOnSuccessListener {
+            if (!dailyData.containsKey(todayKey)) {
+                dailyData[todayKey] = mutableListOf()
+            }
+            recents.get().addOnSuccessListener { doc ->
+                if (doc.exists() && doc.contains(todayKey)) {
+                    recents.update(todayKey, FieldValue.arrayUnion(value))
+                } else {
+                    recents.set(
+                        mapOf(todayKey to listOf(value)),
+                        SetOptions.merge()
+                    )
+                }
+            }
             Toast.makeText(this, "Successfully uploaded to database", Toast.LENGTH_SHORT).show()
         }.addOnFailureListener {
             Toast.makeText(this, "Failed to do stuff", Toast.LENGTH_SHORT).show()
@@ -158,8 +176,8 @@ class MainActivity : AppCompatActivity() {
             .addOnSuccessListener { documentSnapshot ->
                 if (documentSnapshot.exists()) {
                     val level = documentSnapshot.getString(level)
-                    capacityValue.text = "${level?.toInt()} Litres"
-                }else{
+                    capacityValue.text = "${level} Litres"
+                } else {
                     Toast.makeText(this, "Failed to retrieve data", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -172,7 +190,7 @@ class MainActivity : AppCompatActivity() {
 
 
 fun checkLevel(): Double {
-    return 1700.00
+    return 1900.00
 }
 
 fun dpToPx(context: Context, dp: Int): Int {
