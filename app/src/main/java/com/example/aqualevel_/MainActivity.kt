@@ -5,6 +5,7 @@ import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.view.Gravity
@@ -15,6 +16,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -42,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private val level: String = "Water_Level"
     private var date: String = "Date"
     private lateinit var listner: ListenerRegistration
+    @RequiresApi(Build.VERSION_CODES.O)
     val today: LocalDate = LocalDate.now()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val history: FirebaseFirestore= FirebaseFirestore.getInstance()
@@ -76,6 +79,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
