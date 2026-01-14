@@ -1,207 +1,191 @@
 package com.example.aqualevel_
 
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
+import android.app.*
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
-import android.os.Build
-import android.os.Bundle
-import android.os.Handler
+import android.os.*
+import android.util.Log
 import android.view.Gravity
 import android.view.View
-import android.view.animation.LinearInterpolator
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.SetOptions
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
-import java.time.LocalDate
-import kotlin.collections.mutableMapOf
+import androidx.work.*
+import androidx.work.WorkManager
+import com.google.firebase.firestore.*
+import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var button: ImageView
     private lateinit var capacityValue: TextView
-    private lateinit var usageValue: TextView
     private lateinit var percentage: TextView
-    lateinit var waterLevel: FrameLayout
+    private lateinit var waterLevel: FrameLayout
     private lateinit var tankContainer: FrameLayout
-    private var value by Delegates.notNull<Double>()
-    private lateinit var todayKey: String
-    private val level: String = "Water_Level"
-    private var date: String = "Date"
-    private lateinit var listner: ListenerRegistration
-    @RequiresApi(Build.VERSION_CODES.O)
-    val today: LocalDate = LocalDate.now()
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val history: FirebaseFirestore= FirebaseFirestore.getInstance()
-    private val recents=history.collection("History").document("Water Levels")
-    private val docRef = db.collection("Current Water Level").document("Current Reading")
-    var waterReading = mutableMapOf<String, Any>()
-    val dailyData = mutableMapOf<String, MutableList<Double>>()
+
+    private var value :Double=0.00
+    private var todayKey: String=""
+
+    private lateinit var listener: ListenerRegistration
+
+    private val db = FirebaseFirestore.getInstance()
+    private val docRef =
+        db.collection("sensorData").document("esp32_01")
+
+
+
+    private val waterReading = mutableMapOf<String, Any>()
 
     override fun onStart() {
         super.onStart()
-        listner = docRef.addSnapshotListener(this) { document, error ->
-            error?.let {
+
+        listener = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Log.e("Firestore", "Listen failed", error)
                 return@addSnapshotListener
             }
-            document?.let {
-                docRef.get()
-                    .addOnSuccessListener { it ->
-                        if (it.exists()) {
-                            val level = it.getDouble(level)
-                            capacityValue.text = "${level} Litres"
-                        } else {
-                            Toast.makeText(this, "Failed to retrieve data", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Failed to retrieve data", Toast.LENGTH_SHORT).show()
-                    }
-            }
 
+            if (snapshot != null && snapshot.exists()) {
+
+                val distance = snapshot.getDouble("distance") ?: return@addSnapshotListener
+
+                // Convert distance → litres
+                value = (100 - distance) * 10
+
+                // Update text
+                capacityValue.text = "${value.toInt()} litres"
+
+                // Update UI based on NEW value
+                val percent = (value / 1000) * 100
+                percentage.text = "${percent.toInt()}%"
+
+                val params = waterLevel.layoutParams
+                params.height = dpToPx(
+                    this,
+                    ((320 * percent) / 100).toInt()
+                )
+                waterLevel.layoutParams = params
+
+                updateWaterCorners(percent)
+            }
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        listener.remove()
+    }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
             insets
 
         }
+
         button = findViewById(R.id.buttonCheck)
         capacityValue = findViewById(R.id.capacityValue)
-        usageValue = findViewById(R.id.usageValue)
         percentage = findViewById(R.id.percentage)
         waterLevel = findViewById(R.id.waterLevel)
         tankContainer = findViewById(R.id.tankContainer)
 
+        startBubbleAnimation()
+        scheduleBackgroundWorker()
+
+        button.setOnClickListener {
+            val percent = (value / 1000) * 100
+
+            percentage.text = "${percent.toInt()}%"
+
+            val params = waterLevel.layoutParams
+            params.height = dpToPx(this, ((320 * percent) / 100).toInt())
+            waterLevel.layoutParams = params
+
+            updateWaterCorners(percent)
+
+          todayKey = java.text.SimpleDateFormat(
+                "yyyy-MM-dd",
+                java.util.Locale.getDefault()
+            ).format(java.util.Date())
+
+
+
+        }
+    }
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "water_alerts",
+                "Water Level Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            channel.description = "Alerts when water level is low"
+
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun sendData() {
+
+    }
+
+    private fun updateWaterCorners(percent: Double) {
+        val drawable = waterLevel.background as GradientDrawable
+        val bottom = dpToPx(this, 20).toFloat()
+        val top = when {
+            percent < 30 -> 0f
+            percent < 80 -> dpToPx(this, 12).toFloat()
+            else -> dpToPx(this, 20).toFloat()
+        }
+
+        drawable.cornerRadii = floatArrayOf(
+            top, top, top, top,
+            bottom, bottom, bottom, bottom
+        )
+    }
+
+    private fun startBubbleAnimation() {
         tankContainer.post {
             val handler = Handler(mainLooper)
-
-            val bubbleRunnable = object : Runnable {
+            val runnable = object : Runnable {
                 override fun run() {
                     spawnBubble(this@MainActivity, waterLevel)
                     handler.postDelayed(this, (400..900).random().toLong())
                 }
             }
-
-            handler.post(bubbleRunnable)
+            handler.post(runnable)
         }
+    }
 
-        fun updateWaterCorners(percent: Double) {
+    private fun scheduleBackgroundWorker() {
+        val workRequest =
+            PeriodicWorkRequestBuilder<WaterLevelWorker>(1, TimeUnit.MINUTES)
+                .build()
 
-            val drawable = waterLevel.background as GradientDrawable
-
-            // Bottom corners are ALWAYS 20dp
-            val bottomRadius = dpToPx(this, 20).toFloat()
-
-            // Top corners change with level
-            val topRadius = when {
-                percent < 30 -> dpToPx(this, 0).toFloat()
-                percent < 80 -> dpToPx(this, 12).toFloat()
-                else -> dpToPx(this, 20).toFloat()
-            }
-
-            drawable.cornerRadii = floatArrayOf(
-                topRadius, topRadius,           // top-left
-                topRadius, topRadius,           // top-right
-                bottomRadius, bottomRadius,     // bottom-right (FIXED)
-                bottomRadius, bottomRadius      // bottom-left (FIXED)
+        WorkManager.getInstance(this)
+            .enqueueUniquePeriodicWork(
+                "water_level_monitor",
+                ExistingPeriodicWorkPolicy.KEEP,
+                workRequest
             )
-        }
-
-
-
-        button.setOnClickListener {
-            value = checkLevel()
-            val per = (value / 2000) * 100
-
-            percentage.text = "${per.toInt()}%"
-            val params = waterLevel.layoutParams
-            val height = (320 * per) / 100
-            params.height = dpToPx(this, height.toInt())
-            waterLevel.layoutParams = params
-
-            updateWaterCorners(per)
-
-            todayKey = LocalDate.now().toString()
-            waterReading.put(level, value)
-            waterReading.put(date, todayKey)
-
-            sendData()
-        }
     }
-
-    private fun sendData() {
-        docRef.set(waterReading).addOnSuccessListener {
-            if (!dailyData.containsKey(todayKey)) {
-                dailyData[todayKey] = mutableListOf()
-            }
-            recents.get().addOnSuccessListener { doc ->
-                if (doc.exists() && doc.contains(todayKey)) {
-                    recents.update(todayKey, FieldValue.arrayUnion(value))
-                } else {
-                    recents.set(
-                        mapOf(todayKey to listOf(value)),
-                        SetOptions.merge()
-                    )
-                }
-            }
-            Toast.makeText(this, "Successfully uploaded to database", Toast.LENGTH_SHORT).show()
-        }.addOnFailureListener {
-            Toast.makeText(this, "Failed to do stuff", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun getData() {
-        docRef.get()
-            .addOnSuccessListener { documentSnapshot ->
-                if (documentSnapshot.exists()) {
-                    val level = documentSnapshot.getString(level)
-                    capacityValue.text = "${level} Litres"
-                } else {
-                    Toast.makeText(this, "Failed to retrieve data", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to retrieve data", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-}
-
-
-fun checkLevel(): Double {
-    return 1900.00
 }
 
 fun dpToPx(context: Context, dp: Int): Int {
     return (dp * context.resources.displayMetrics.density).toInt()
 }
-
-private fun spawnBubble(
+fun spawnBubble(
     context: Context,
     waterLevel: FrameLayout
 ) {
@@ -222,8 +206,8 @@ private fun spawnBubble(
         shape = GradientDrawable.OVAL
         setColor(0x66FFFFFF)
     }
-    bubble.background = drawable
 
+    bubble.background = drawable
     waterLevel.addView(bubble)
 
     val riseDistance = waterLevel.height

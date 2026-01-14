@@ -111,7 +111,7 @@
                     android:id="@+id/textView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Capacity: 2,000 L Total"
+                    android:text="Capacity: 1,000 L Total"
                     android:textColor="#92BBC9"
                     android:textSize="14sp" />
 
