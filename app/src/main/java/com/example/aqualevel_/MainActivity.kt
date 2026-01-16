@@ -10,15 +10,13 @@ import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.work.*
 import androidx.work.WorkManager
 import com.google.firebase.firestore.*
 import java.util.concurrent.TimeUnit
-import kotlin.properties.Delegates
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,7 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tankContainer: FrameLayout
 
     private var value :Double=0.00
-    private var todayKey: String=""
+
 
     private lateinit var listener: ListenerRegistration
 
@@ -39,7 +37,6 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    private val waterReading = mutableMapOf<String, Any>()
 
     override fun onStart() {
         super.onStart()
@@ -85,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-
+        createNotificationChannel()
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
@@ -103,23 +100,10 @@ class MainActivity : AppCompatActivity() {
         scheduleBackgroundWorker()
 
         button.setOnClickListener {
-            val percent = (value / 1000) * 100
-
-            percentage.text = "${percent.toInt()}%"
-
-            val params = waterLevel.layoutParams
-            params.height = dpToPx(this, ((320 * percent) / 100).toInt())
-            waterLevel.layoutParams = params
-
-            updateWaterCorners(percent)
-
-          todayKey = java.text.SimpleDateFormat(
-                "yyyy-MM-dd",
-                java.util.Locale.getDefault()
-            ).format(java.util.Date())
-
-
-
+            FirebaseFirestore.getInstance()
+                .collection("sensorCommands")
+                .document("esp32_01")
+                .set(mapOf("refresh" to true))
         }
     }
     private fun createNotificationChannel() {
@@ -136,9 +120,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun sendData() {
-
-    }
 
     private fun updateWaterCorners(percent: Double) {
         val drawable = waterLevel.background as GradientDrawable
