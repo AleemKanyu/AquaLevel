@@ -27,12 +27,12 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="@font/dela_gothic_one"
-
             android:gravity="center"
             android:text="Aqua Level"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
+
 
 
     </LinearLayout>
@@ -52,6 +52,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 <!--Tanker box-->
+
             <FrameLayout
                 android:id="@+id/tankContainer"
                 android:layout_gravity="center"

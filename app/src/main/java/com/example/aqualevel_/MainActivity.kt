@@ -2,6 +2,7 @@ package com.example.aqualevel_
 
 import android.app.*
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.drawable.GradientDrawable
 import android.os.*
 import android.util.Log
@@ -25,17 +26,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var percentage: TextView
     private lateinit var waterLevel: FrameLayout
     private lateinit var tankContainer: FrameLayout
+    private lateinit var myPref: SharedPreferences
 
-    private var value :Double=0.00
-
+    private var value: Double = 0.00
+    private var data = "Water Levels"
 
     private lateinit var listener: ListenerRegistration
 
     private val db = FirebaseFirestore.getInstance()
     private val docRef =
         db.collection("sensorData").document("esp32_01")
-
-
 
 
     override fun onStart() {
@@ -104,8 +104,14 @@ class MainActivity : AppCompatActivity() {
                 .collection("sensorCommands")
                 .document("esp32_01")
                 .set(mapOf("refresh" to true))
+
+            myPref = getSharedPreferences(data,0)
+            val editor=myPref.edit()
+            editor.putInt("Level",value.toInt())
+            editor.commit()
         }
     }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -166,6 +172,7 @@ class MainActivity : AppCompatActivity() {
 fun dpToPx(context: Context, dp: Int): Int {
     return (dp * context.resources.displayMetrics.density).toInt()
 }
+
 fun spawnBubble(
     context: Context,
     waterLevel: FrameLayout
