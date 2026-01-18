@@ -8,7 +8,7 @@
 
 ---
 
-## 📌 Overview
+## Overview
 **Aqua Level** is an IoT-based water level monitoring system that measures water levels in real time and displays them on an Android application.  
 It combines **embedded systems**, **cloud computing**, and **mobile development** to provide a complete end-to-end solution.
 
@@ -16,7 +16,7 @@ The system is designed to be **low-cost**, **scalable**, and suitable for real-w
 
 ---
 
-## ✨ Features
+## Features
 - Real-time water level monitoring
 - ESP32-to-Firebase cloud communication
 - Android app with live & historical data
@@ -26,7 +26,7 @@ The system is designed to be **low-cost**, **scalable**, and suitable for real-w
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Hardware
 - ESP32
@@ -43,7 +43,7 @@ The system is designed to be **low-cost**, **scalable**, and suitable for real-w
 
 ---
 
-## 🧠 System Architecture
+## System Architecture
 1. Sensor measures water level.
 2. ESP32 processes the data.
 3. Data is sent to Firebase via Wi-Fi.
@@ -52,7 +52,7 @@ The system is designed to be **low-cost**, **scalable**, and suitable for real-w
 
 ---
 
-## 📱 Android App
+## Android App
 - Live water level display
 - Cloud-synced data
 - Daily history tracking
@@ -60,7 +60,7 @@ The system is designed to be **low-cost**, **scalable**, and suitable for real-w
 
 ---
 
-## 🔌 Hardware Connections (Summary)
+## Hardware Connections (Summary)
 
 | Component | ESP32 |
 |--------|------|
@@ -73,7 +73,7 @@ The system is designed to be **low-cost**, **scalable**, and suitable for real-w
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Hardware Setup
 1. Connect components as per wiring.
@@ -92,7 +92,7 @@ The system is designed to be **low-cost**, **scalable**, and suitable for real-w
 
 ---
 
-## 🖼️ Screenshots
+## Screenshots
 
 > <img 
   src="https://github.com/user-attachments/assets/247dbf2f-6d5d-48a8-8bb5-03d8db047357"
