@@ -26,10 +26,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var percentage: TextView
     private lateinit var waterLevel: FrameLayout
     private lateinit var tankContainer: FrameLayout
-    private lateinit var myPref: SharedPreferences
+
 
     private var value: Double = 0.00
-    private var data = "Water Levels"
+
 
     private lateinit var listener: ListenerRegistration
 
@@ -104,11 +104,6 @@ class MainActivity : AppCompatActivity() {
                 .collection("sensorCommands")
                 .document("esp32_01")
                 .set(mapOf("refresh" to true))
-
-            myPref = getSharedPreferences(data,0)
-            val editor=myPref.edit()
-            editor.putInt("Level",value.toInt())
-            editor.commit()
         }
     }
 
