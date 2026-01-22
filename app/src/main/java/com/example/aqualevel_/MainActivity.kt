@@ -2,7 +2,6 @@ package com.example.aqualevel_
 
 import android.app.*
 import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.drawable.GradientDrawable
 import android.os.*
 import android.util.Log
@@ -14,10 +13,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.work.*
-import androidx.work.WorkManager
 import com.google.firebase.firestore.*
 import java.util.concurrent.TimeUnit
-
 
 class MainActivity : AppCompatActivity() {
 
@@ -27,16 +24,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var waterLevel: FrameLayout
     private lateinit var tankContainer: FrameLayout
 
-
-    private var value: Double = 0.00
-
-
+    private var value: Double = 0.0
     private lateinit var listener: ListenerRegistration
 
     private val db = FirebaseFirestore.getInstance()
-    private val docRef =
-        db.collection("sensorData").document("esp32_01")
+    private val docRef = db.collection("sensorData").document("esp32_01")
 
+    // ---------- CALIBRATION CONSTANTS ----------
+    private val emptyDistance = 121.0   // cm (sensor reading when tank is EMPTY)
+    private val fullDistance  = 21.0    // cm (sensor reading when tank is FULL)
+    private val tankVolume = 1000.0     // litres
+    // -------------------------------------------
 
     override fun onStart() {
         super.onStart()
@@ -51,24 +49,33 @@ class MainActivity : AppCompatActivity() {
 
                 val distance = snapshot.getDouble("distance") ?: return@addSnapshotListener
 
-                // Convert distance → litres
-                value = (100 - distance) * 10
+                // Clamp distance to calibrated range
+                val clampedDistance =
+                    distance.coerceIn(fullDistance, emptyDistance)
 
-                // Update text
+                // Distance -> percentage (CALIBRATED)
+                val percent =
+                    ((emptyDistance - clampedDistance) /
+                            (emptyDistance - fullDistance)) * 100.0
+
+                val safePercent = percent.coerceIn(0.0, 100.0)
+
+                // Percentage -> litres
+                value = (safePercent / 100.0) * tankVolume
+
+                // Update UI text
                 capacityValue.text = "${value.toInt()} litres"
+                percentage.text = "${safePercent.toInt()*2}%"
 
-                // Update UI based on NEW value
-                val percent = (value / 1000) * 100
-                percentage.text = "${percent.toInt()}%"
-
+                // Update water level height
                 val params = waterLevel.layoutParams
                 params.height = dpToPx(
                     this,
-                    ((320 * percent) / 100).toInt()
+                    ((290 * safePercent) / 100).toInt()
                 )
                 waterLevel.layoutParams = params
 
-                updateWaterCorners(percent)
+                updateWaterCorners(safePercent)
             }
         }
     }
@@ -83,11 +90,11 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         createNotificationChannel()
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
             insets
-
         }
 
         button = findViewById(R.id.buttonCheck)
@@ -120,7 +127,6 @@ class MainActivity : AppCompatActivity() {
             manager.createNotificationChannel(channel)
         }
     }
-
 
     private fun updateWaterCorners(percent: Double) {
         val drawable = waterLevel.background as GradientDrawable
