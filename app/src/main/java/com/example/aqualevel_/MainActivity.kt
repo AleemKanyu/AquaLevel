@@ -1,5 +1,6 @@
 package com.example.aqualevel_
 
+import android.animation.ObjectAnimator
 import android.app.*
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
@@ -7,9 +8,11 @@ import android.os.*
 import android.util.Log
 import android.view.Gravity
 import android.view.View
+
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.work.*
@@ -64,8 +67,8 @@ class MainActivity : AppCompatActivity() {
                 value = (safePercent / 100.0) * tankVolume
 
                 // Update UI text
-                capacityValue.text = "${value.toInt()} litres"
-                percentage.text = "${safePercent.toInt()*2}%"
+                capacityValue.text = "${value.toInt()*2} litres"
+                percentage.text = "${safePercent.toInt()}%"
 
                 // Update water level height
                 val params = waterLevel.layoutParams
@@ -75,7 +78,6 @@ class MainActivity : AppCompatActivity() {
                 )
                 waterLevel.layoutParams = params
 
-                updateWaterCorners(safePercent)
             }
         }
     }
@@ -127,22 +129,6 @@ class MainActivity : AppCompatActivity() {
             manager.createNotificationChannel(channel)
         }
     }
-
-    private fun updateWaterCorners(percent: Double) {
-        val drawable = waterLevel.background as GradientDrawable
-        val bottom = dpToPx(this, 20).toFloat()
-        val top = when {
-            percent < 30 -> 0f
-            percent < 80 -> dpToPx(this, 12).toFloat()
-            else -> dpToPx(this, 20).toFloat()
-        }
-
-        drawable.cornerRadii = floatArrayOf(
-            top, top, top, top,
-            bottom, bottom, bottom, bottom
-        )
-    }
-
     private fun startBubbleAnimation() {
         tankContainer.post {
             val handler = Handler(mainLooper)
@@ -155,6 +141,9 @@ class MainActivity : AppCompatActivity() {
             handler.post(runnable)
         }
     }
+
+
+
 
     private fun scheduleBackgroundWorker() {
         val workRequest =
@@ -182,12 +171,18 @@ fun spawnBubble(
     val bubbleSizePx = dpToPx(context, bubbleSizeDp)
 
     val bubble = View(context)
+
+// Calculate a random horizontal position based on the container width
+// We use the actual width of the waterLevel view so it fits any screen
+    val maxLeftPosition = waterLevel.width - bubbleSizePx
+    val randomLeftMargin = if (maxLeftPosition > 0) (0..maxLeftPosition).random() else 0
+
     bubble.layoutParams = FrameLayout.LayoutParams(
         bubbleSizePx,
         bubbleSizePx
     ).apply {
         gravity = Gravity.BOTTOM
-        leftMargin = (20..160).random()
+        leftMargin = randomLeftMargin // Use the calculated dynamic margin
         bottomMargin = 10
     }
 

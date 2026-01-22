@@ -1,14 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F7FA">
+    android:background="#F0F7FA"
+    android:padding="4dp">
 
     <!-- Top App Bar -->
+
+    <LinearLayout
+        android:id="@+id/history"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="148dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="@id/bottomBar"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_history"
+            app:tint="#6B7C86" />
+
+        <TextView
+
+            android:layout_width="120px"
+            android:layout_height="60px"
+            android:text="HISTORY"
+            android:textAlignment="center"
+            android:textColor="#6B7C86"
+            android:textSize="10sp" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/topBar"
@@ -27,6 +54,7 @@
             android:layout_width="5dp"
             android:layout_height="40sp"
             android:layout_weight=".1"
+            android:paddingRight="5dp"
             tools:srcCompat="@tools:sample/avatars" />
 
 
@@ -77,14 +105,15 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-<!--Tanker box-->
+            android:orientation="vertical"
+            android:padding="10dp">
+            <!--Tanker box-->
             <FrameLayout
-                android:layout_width="300dp"
+                android:layout_width="400dp"
                 android:layout_height="400dp"
                 android:layout_gravity="center_horizontal"
                 android:background="@drawable/bg_card"
-                >
+                android:elevation="2dp">
 
                 <FrameLayout
                     android:id="@+id/tankContainer"
@@ -95,13 +124,15 @@
                     android:clipToPadding="false"
                     android:paddingTop="12dp">
 
+
                     <FrameLayout
                         android:id="@+id/waterLevel"
                         android:layout_width="match_parent"
                         android:layout_height="200dp"
                         android:layout_gravity="bottom"
                         android:layout_margin="5dp"
-                        android:background="@drawable/bg_water_fill" />
+                        android:background="@drawable/bg_water_fill"
+                        android:clipToOutline="true" />
 
                     <FrameLayout
                         android:id="@+id/glass"
@@ -109,6 +140,7 @@
                         android:layout_height="match_parent"
                         android:layout_gravity="center"
                         android:background="@drawable/tank_glass_overlay"
+
                         android:elevation="4dp" />
 
                     <TextView
@@ -118,7 +150,7 @@
                         android:layout_gravity="center"
                         android:elevation="5dp"
                         android:shadowColor="#40000000"
-                        android:shadowDx="0"
+                        android:shadowDx="1"
                         android:shadowDy="4"
                         android:shadowRadius="8"
                         android:text="45%"
@@ -132,58 +164,50 @@
                         android:layout_gravity="center"
                         android:elevation="5dp"
                         android:letterSpacing="0.2"
+                        android:shadowDx="10"
+                        android:shadowDy="10"
+                        android:shadowRadius="10"
                         android:text="CAPACITY"
-                        android:textColor="#EEFFFFFF"
+                        android:textColor="@color/white"
                         android:textSize="12sp"
                         android:translationY="35dp" />
 
                 </FrameLayout>
 
 
-
-
             </FrameLayout>
 
-<!--Details about usage-->
+            <!--Details about usage-->
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="20dp" />
+
+            <FrameLayout
+                android:layout_width="400dp"
+                android:layout_height="400dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/bg_card"
+                android:elevation="2dp">
+
+            </FrameLayout>
 
             <FrameLayout
                 android:id="@+id/Capcity"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:textAlignment="center">
-
-                <TextView
-                    android:id="@+id/textView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Capacity: 1,000 L Total"
-                    android:textColor="#92BBC9"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/capacityValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="1,300 Liters"
-                    android:textAlignment="center"
-                    android:textColor="@android:color/white"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
-
-            </FrameLayout>
+                android:background="@drawable/bg_card"
+                android:textAlignment="center" />
 
             <LinearLayout
                 android:id="@+id/statsRow"
-                android:layout_width="match_parent"
+                android:layout_width="400dp"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:layout_margin="16dp"
                 android:gravity="center"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:padding="5dp">
 
                 <!-- Usage -->
                 <LinearLayout
@@ -191,7 +215,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
-                    android:gravity="center"
+                    android:elevation="2dp"
+                    android:gravity="start"
                     android:orientation="vertical"
                     android:padding="16dp">
 
@@ -203,30 +228,33 @@
 
                     <TextView
                         android:layout_width="200px"
-                        android:layout_height="50px"
-                        android:text="USAGE RATE"
-                        android:textAlignment="center"
-                        android:textColor="#92BBC9"
-                        android:textSize="12sp" />
+                        android:layout_height="wrap_content"
+                        android:text="TOTAL"
+                        android:textAlignment="textStart"
+                        android:textColor="#000000"
+                        android:textSize="18dp" />
 
                     <TextView
-                        android:id="@+id/usageValue"
-                        android:layout_width="200px"
-                        android:layout_height="50px"
-                        android:text="45L / Day"
-                        android:textAlignment="center"
-                        android:textColor="@android:color/white"
+                        android:id="@+id/capacityValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="1,300 L"
+                        android:textAlignment="textStart"
+                        android:textColor="@color/black"
+                        android:textSize="28dp"
                         android:textStyle="bold" />
+
                 </LinearLayout>
 
                 <!-- Remaining -->
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
-                    android:gravity="center"
+                    android:elevation="1dp"
+                    android:gravity="left"
                     android:orientation="vertical"
                     android:padding="16dp">
 
@@ -237,19 +265,20 @@
                         app:tint="#13B6EC" />
 
                     <TextView
-                        android:layout_width="100dp"
-                        android:layout_height="50px"
-                        android:text="EMPTY APPROX"
-                        android:textAlignment="center"
-                        android:textColor="#92BBC9"
-                        android:textSize="12sp" />
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DAYS LEFT"
+                        android:textAlignment="textStart"
+                        android:textColor="#1E2021"
+                        android:textSize="18dp" />
 
                     <TextView
-                        android:layout_width="200px"
-                        android:layout_height="50px"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="~28 Days"
                         android:textAlignment="center"
-                        android:textColor="@android:color/white"
+                        android:textColor="@color/black"
+                        android:textSize="28dp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -258,43 +287,16 @@
 
     <View
         android:id="@+id/bottomBar"
-        android:layout_width="0dp"
+        android:layout_width="400dp"
         android:layout_height="72dp"
-        android:background="@drawable/bg_bottom_bar"
+        android:layout_marginBottom="25dp"
+        android:background="@drawable/bg_card"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 
     <!-- Center Floating Button -->
-
-    <LinearLayout
-        android:id="@+id/history"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="84dp"
-        android:layout_marginBottom="12dp"
-        android:gravity="center"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="@id/bottomBar"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_history"
-            app:tint="#6B7C86" />
-
-        <TextView
-
-            android:layout_width="120px"
-            android:layout_height="60px"
-            android:text="HISTORY"
-            android:textAlignment="center"
-            android:textColor="#6B7C86"
-            android:textSize="10sp" />
-    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/alerts"

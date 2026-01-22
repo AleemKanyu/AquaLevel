@@ -2,7 +2,7 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
 
-    <corners android:radius="34dp" />
+    <corners android:radius="43dp" />
 
     <gradient
         android:angle="90"
