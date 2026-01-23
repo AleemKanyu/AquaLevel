@@ -8,11 +8,9 @@ import android.os.*
 import android.util.Log
 import android.view.Gravity
 import android.view.View
-
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.work.*
@@ -28,70 +26,71 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tankContainer: FrameLayout
 
     private var value: Double = 0.0
-    private lateinit var listener: ListenerRegistration
+    private var listener: ListenerRegistration? = null
 
     private val db = FirebaseFirestore.getInstance()
     private val docRef = db.collection("sensorData").document("esp32_01")
 
     // ---------- CALIBRATION CONSTANTS ----------
-    private val emptyDistance = 130.0   // cm (sensor reading when tank is EMPTY)
-    private val fullDistance  = 30.0    // cm (sensor reading when tank is FULL)
-    private val tankVolume = 1000.0     // litres
-    // -------------------------------------------
+    private val emptyDistance = 130.0
+    private val fullDistance  = 30.0
+    private val tankVolume = 1000.0
+    // ------------------------------------------
+
+    // Bubble animation control
+    private var bubbleHandler: Handler? = null
+    private var bubbleRunnable: Runnable? = null
 
     override fun onStart() {
         super.onStart()
 
+        // Defensive remove
+        listener?.remove()
+
         listener = docRef.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                Log.e("Firestore", "Listen failed", error)
-                return@addSnapshotListener
-            }
+            if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
 
-            if (snapshot != null && snapshot.exists()) {
+            val distance = snapshot.getDouble("distance") ?: return@addSnapshotListener
 
-                val distance = snapshot.getDouble("distance") ?: return@addSnapshotListener
+            val clampedDistance =
+                distance.coerceIn(fullDistance, emptyDistance)
 
-                // Clamp distance to calibrated range
-                val clampedDistance =
-                    distance.coerceIn(fullDistance, emptyDistance)
+            val percent =
+                ((emptyDistance - clampedDistance) /
+                        (emptyDistance - fullDistance)) * 100.0
 
-                // Distance -> percentage (CALIBRATED)
-                val percent =
-                    ((emptyDistance - clampedDistance) /
-                            (emptyDistance - fullDistance)) * 100.0
+            val safePercent = percent.coerceIn(0.0, 100.0)
 
-                val safePercent = percent.coerceIn(0.0, 100.0)
+            value = (safePercent / 100.0) * tankVolume
 
-                // Percentage -> litres
-                value = (safePercent / 100.0) * tankVolume
+            // Keeping your original behaviour (*2)
+            capacityValue.text = "${value.toInt() * 2} litres"
+            percentage.text = "${safePercent.toInt()}%"
 
-                // Update UI text
-                capacityValue.text = "${value.toInt()*2} litres"
-                percentage.text = "${safePercent.toInt()}%"
-
-                // Update water level height
-                val params = waterLevel.layoutParams
-                params.height = dpToPx(
-                    this,
-                    ((280 * safePercent) / 100).toInt()
-                )
-                waterLevel.layoutParams = params
-
-            }
+            val params = waterLevel.layoutParams
+            params.height = dpToPx(
+                this,
+                ((280 * safePercent) / 100).toInt()
+            )
+            waterLevel.layoutParams = params
         }
+
+        startBubbleAnimation()
     }
 
     override fun onStop() {
         super.onStop()
-        listener.remove()
+
+        listener?.remove()
+        listener = null
+
+        stopBubbleAnimation()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        createNotificationChannel()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -105,43 +104,35 @@ class MainActivity : AppCompatActivity() {
         waterLevel = findViewById(R.id.waterLevel)
         tankContainer = findViewById(R.id.tankContainer)
 
-        startBubbleAnimation()
         scheduleBackgroundWorker()
 
         button.setOnClickListener {
-            FirebaseFirestore.getInstance()
-                .collection("sensorCommands")
+            db.collection("sensorCommands")
                 .document("esp32_01")
                 .set(mapOf("refresh" to true))
         }
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "water_alerts",
-                "Water Level Alerts",
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            channel.description = "Alerts when water level is low"
+    // ---------------- BUBBLE ANIMATION ----------------
 
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
-        }
-    }
     private fun startBubbleAnimation() {
-        tankContainer.post {
-            val handler = Handler(mainLooper)
-            val runnable = object : Runnable {
-                override fun run() {
-                    spawnBubble(this@MainActivity, waterLevel)
-                    handler.postDelayed(this, (400..900).random().toLong())
-                }
+        bubbleHandler = Handler(mainLooper)
+        bubbleRunnable = object : Runnable {
+            override fun run() {
+                spawnBubble(this@MainActivity, waterLevel)
+                bubbleHandler?.postDelayed(this, (400..900).random().toLong())
             }
-            handler.post(runnable)
         }
+        bubbleHandler?.post(bubbleRunnable!!)
     }
 
+    private fun stopBubbleAnimation() {
+        bubbleHandler?.removeCallbacksAndMessages(null)
+        bubbleHandler = null
+        bubbleRunnable = null
+    }
+
+    // -------------------------------------------------
 
 
 
@@ -159,6 +150,8 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+
+
 fun dpToPx(context: Context, dp: Int): Int {
     return (dp * context.resources.displayMetrics.density).toInt()
 }
@@ -172,17 +165,15 @@ fun spawnBubble(
 
     val bubble = View(context)
 
-// Calculate a random horizontal position based on the container width
-// We use the actual width of the waterLevel view so it fits any screen
-    val maxLeftPosition = waterLevel.width - bubbleSizePx
-    val randomLeftMargin = if (maxLeftPosition > 0) (0..maxLeftPosition).random() else 0
+    val maxLeft = waterLevel.width - bubbleSizePx
+    val leftMargin = if (maxLeft > 0) (0..maxLeft).random() else 0
 
     bubble.layoutParams = FrameLayout.LayoutParams(
         bubbleSizePx,
         bubbleSizePx
     ).apply {
         gravity = Gravity.BOTTOM
-        leftMargin = randomLeftMargin // Use the calculated dynamic margin
+        this.leftMargin = leftMargin
         bottomMargin = 10
     }
 
@@ -194,10 +185,8 @@ fun spawnBubble(
     bubble.background = drawable
     waterLevel.addView(bubble)
 
-    val riseDistance = waterLevel.height
-
     bubble.animate()
-        .translationY(-riseDistance.toFloat())
+        .translationY(-waterLevel.height.toFloat())
         .alpha(0f)
         .setDuration((3000..6000).random().toLong())
         .withEndAction {
