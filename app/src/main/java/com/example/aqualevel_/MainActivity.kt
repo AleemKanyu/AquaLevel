@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
                 val params = waterLevel.layoutParams
                 params.height = dpToPx(
                     this,
-                    ((290 * safePercent) / 100).toInt()
+                    ((280 * safePercent) / 100).toInt()
                 )
                 waterLevel.layoutParams = params
 

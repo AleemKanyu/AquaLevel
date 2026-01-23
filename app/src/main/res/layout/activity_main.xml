@@ -49,13 +49,15 @@
         app:layout_constraintTop_toTopOf="parent">
 
 
-        <ImageView
-            android:id="@+id/imageView"
-            android:layout_width="5dp"
-            android:layout_height="40sp"
-            android:layout_weight=".1"
-            android:paddingRight="5dp"
-            tools:srcCompat="@tools:sample/avatars" />
+       <ImageView
+           android:layout_width="40dp"
+           android:layout_height="40dp"
+           android:background="@drawable/man"
+           android:layout_marginRight="10dp"
+
+           >
+
+       </ImageView>
 
 
         <LinearLayout
@@ -69,7 +71,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:fontFamily="sans-serif-thin"
+                android:fontFamily=""
                 android:gravity="center"
                 android:text="Welcome Back"
                 android:textColor="@color/black"
@@ -109,26 +111,25 @@
             android:padding="10dp">
             <!--Tanker box-->
             <FrameLayout
-                android:layout_width="400dp"
-                android:layout_height="400dp"
+                android:layout_width="300dp"
+                android:layout_height="330dp"
                 android:layout_gravity="center_horizontal"
-                android:background="@drawable/bg_card"
-                android:elevation="2dp">
+                android:background="@drawable/bg_card">
 
                 <FrameLayout
                     android:id="@+id/tankContainer"
                     android:layout_width="200dp"
-                    android:layout_height="320dp"
+                    android:layout_height="300dp"
                     android:layout_gravity="center"
                     android:clipChildren="false"
                     android:clipToPadding="false"
-                    android:paddingTop="12dp">
+                    >
 
 
                     <FrameLayout
                         android:id="@+id/waterLevel"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
+                        android:layout_height="140dp"
                         android:layout_gravity="bottom"
                         android:layout_margin="5dp"
                         android:background="@drawable/bg_water_fill"
@@ -141,7 +142,7 @@
                         android:layout_gravity="center"
                         android:background="@drawable/tank_glass_overlay"
 
-                        android:elevation="4dp" />
+                        />
 
                     <TextView
                         android:id="@+id/percentage"
@@ -183,11 +184,10 @@
                 android:layout_height="20dp" />
 
             <FrameLayout
-                android:layout_width="400dp"
-                android:layout_height="400dp"
+                android:layout_width="300dp"
+                android:layout_height="330dp"
                 android:layout_gravity="center_horizontal"
-                android:background="@drawable/bg_card"
-                android:elevation="2dp">
+                android:background="@drawable/bg_card">
 
             </FrameLayout>
 
@@ -201,7 +201,7 @@
 
             <LinearLayout
                 android:id="@+id/statsRow"
-                android:layout_width="400dp"
+                android:layout_width="300dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_margin="16dp"
@@ -215,7 +215,6 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
-                    android:elevation="2dp"
                     android:gravity="start"
                     android:orientation="vertical"
                     android:padding="16dp">
@@ -223,7 +222,7 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/ic_water"
+                        android:src="@drawable/waterwaves"
                         app:tint="#13B6EC" />
 
                     <TextView
@@ -232,7 +231,7 @@
                         android:text="TOTAL"
                         android:textAlignment="textStart"
                         android:textColor="#000000"
-                        android:textSize="18dp" />
+                        android:textSize="10dp" />
 
                     <TextView
                         android:id="@+id/capacityValue"
@@ -241,7 +240,7 @@
                         android:text="1,300 L"
                         android:textAlignment="textStart"
                         android:textColor="@color/black"
-                        android:textSize="28dp"
+                        android:textSize="20dp"
                         android:textStyle="bold" />
 
                 </LinearLayout>
@@ -253,16 +252,17 @@
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
-                    android:elevation="1dp"
                     android:gravity="left"
                     android:orientation="vertical"
                     android:padding="16dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_meter"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/clock"
                         app:tint="#13B6EC" />
+
+
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -270,7 +270,9 @@
                         android:text="DAYS LEFT"
                         android:textAlignment="textStart"
                         android:textColor="#1E2021"
-                        android:textSize="18dp" />
+                        android:textSize="10dp" />
+
+
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -278,14 +280,14 @@
                         android:text="~28 Days"
                         android:textAlignment="center"
                         android:textColor="@color/black"
-                        android:textSize="28dp"
+                        android:textSize="20dp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
-    <View
+    <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="400dp"
         android:layout_height="72dp"
@@ -293,7 +295,9 @@
         android:background="@drawable/bg_card"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+
+        />
 
 
     <!-- Center Floating Button -->
