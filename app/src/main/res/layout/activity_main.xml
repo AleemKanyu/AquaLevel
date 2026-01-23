@@ -8,39 +8,10 @@
     android:background="#F0F7FA"
     android:padding="4dp">
 
-    <!-- Top App Bar -->
-
-    <LinearLayout
-        android:id="@+id/history"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="148dp"
-        android:layout_marginBottom="16dp"
-        android:gravity="center"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="@id/bottomBar"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_history"
-            app:tint="#6B7C86" />
-
-        <TextView
-
-            android:layout_width="120px"
-            android:layout_height="60px"
-            android:text="HISTORY"
-            android:textAlignment="center"
-            android:textColor="#6B7C86"
-            android:textSize="10sp" />
-    </LinearLayout>
-
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="80dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="16dp"
@@ -49,15 +20,11 @@
         app:layout_constraintTop_toTopOf="parent">
 
 
-       <ImageView
-           android:layout_width="40dp"
-           android:layout_height="40dp"
-           android:background="@drawable/man"
-           android:layout_marginRight="10dp"
-
-           >
-
-       </ImageView>
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginRight="10dp"
+            android:background="@drawable/man" />
 
 
         <LinearLayout
@@ -94,12 +61,12 @@
 
     </LinearLayout>
 
-
     <ScrollView
-        android:layout_width="0dp"
+        android:id="@+id/scrollBar"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        app:layout_constraintBottom_toTopOf="@+id/bottomBar"
+        android:layout_marginBottom="100dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/topBar">
@@ -109,9 +76,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="10dp">
-            <!--Tanker box-->
             <FrameLayout
-                android:layout_width="300dp"
+                android:layout_width="350dp"
                 android:layout_height="330dp"
                 android:layout_gravity="center_horizontal"
                 android:background="@drawable/bg_card">
@@ -122,8 +88,7 @@
                     android:layout_height="300dp"
                     android:layout_gravity="center"
                     android:clipChildren="false"
-                    android:clipToPadding="false"
-                    >
+                    android:clipToPadding="false">
 
 
                     <FrameLayout
@@ -178,16 +143,326 @@
 
             </FrameLayout>
 
-            <!--Details about usage-->
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="20dp" />
 
             <FrameLayout
-                android:layout_width="300dp"
+                android:layout_width="350dp"
                 android:layout_height="330dp"
                 android:layout_gravity="center_horizontal"
                 android:background="@drawable/bg_card">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="20dp"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/bg_icon_rounded"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_chart_bars"
+                            app:tint="#A1C9F1" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_marginLeft="4dp"
+                            android:backgroundTint="@color/black"
+                            android:text="Daily Usage"
+                            android:textColor="#000000"
+                            android:textSize="24sp"
+                            android:textStyle="bold">
+
+                        </TextView>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="20dp"
+                        android:layout_marginBottom="20dp"
+                        android:backgroundTint="@color/black"
+                        android:text="Analysis for the current week"
+                        android:textColor="@color/black">
+
+                    </TextView>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_horizontal"
+                        android:orientation="horizontal"
+                        android:padding="2dp">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/mondayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/monday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="M"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/tuesdayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/tuesday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="T"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/wedBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/wed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="W"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/thursdayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/thursday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="TH"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/fridayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/friday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="F"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/saturdayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/saturday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="S"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/sundayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/sunday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="S"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
 
             </FrameLayout>
 
@@ -201,7 +476,7 @@
 
             <LinearLayout
                 android:id="@+id/statsRow"
-                android:layout_width="300dp"
+                android:layout_width="360dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_margin="16dp"
@@ -209,7 +484,6 @@
                 android:orientation="horizontal"
                 android:padding="5dp">
 
-                <!-- Usage -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -245,7 +519,6 @@
 
                 </LinearLayout>
 
-                <!-- Remaining -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
@@ -263,7 +536,6 @@
                         app:tint="#13B6EC" />
 
 
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -271,7 +543,6 @@
                         android:textAlignment="textStart"
                         android:textColor="#1E2021"
                         android:textSize="10dp" />
-
 
 
                     <TextView
@@ -284,71 +555,87 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="90dp">
+
+            </Space>
         </LinearLayout>
     </ScrollView>
 
-    <LinearLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="400dp"
-        android:layout_height="72dp"
-        android:layout_marginBottom="25dp"
+
+    <View
+        android:id="@+id/view2"
+        android:layout_width="360dp"
+        android:layout_height="75dp"
+        android:layout_marginBottom="30dp"
         android:background="@drawable/bg_card"
+        android:elevation="6dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-
-        />
-
-
-    <!-- Center Floating Button -->
-
-    <LinearLayout
-        android:id="@+id/alerts"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="32dp"
-        android:layout_marginBottom="16dp"
-        android:gravity="center"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="@id/bottomBar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.773"
-        app:layout_constraintStart_toEndOf="@+id/history">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_alert"
-            app:tint="#6B7C86" />
-
-        <TextView
-            android:layout_width="120px"
-            android:layout_height="60px"
-            android:text="AlERTS"
-            android:textAlignment="center"
-            android:textColor="#6B7C86"
-            android:textSize="10sp" />
-    </LinearLayout>
+        app:layout_constraintStart_toStartOf="parent" />
 
     <FrameLayout
         android:id="@+id/frameLayout"
         android:layout_width="72dp"
         android:layout_height="72dp"
-        android:layout_marginBottom="28dp"
-        android:background="@drawable/bg_fab_glow"
-        app:layout_constraintBottom_toBottomOf="@id/bottomBar"
+        android:layout_marginBottom="33dp"
+        android:elevation="10dp"
+        android:padding="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
             android:id="@+id/buttonCheck"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:layout_gravity="center"
             android:background="@drawable/bg_fab"
-            android:padding="10dp"
+            android:padding="12dp"
             android:src="@drawable/ic_sync"
             app:tint="@android:color/white" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/settings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:elevation="7dp"
+        android:padding="10dp"
+        app:layout_constraintBottom_toBottomOf="@+id/view2"
+        app:layout_constraintEnd_toStartOf="@+id/frameLayout"
+        app:layout_constraintStart_toStartOf="@+id/view2"
+        app:layout_constraintTop_toTopOf="@+id/view2">
+
+        <ImageView
+            android:id="@+id/settingsButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:background="@drawable/statistics"
+            android:padding="4dp" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/graph"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:elevation="7dp"
+        android:padding="10dp"
+        app:layout_constraintBottom_toBottomOf="@+id/view2"
+        app:layout_constraintEnd_toEndOf="@+id/view2"
+        app:layout_constraintStart_toEndOf="@+id/frameLayout"
+        app:layout_constraintTop_toTopOf="@+id/view2">
+
+        <ImageView
+            android:id="@+id/buttonGraph"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:background="@drawable/user"
+            android:padding="4dp" />
     </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

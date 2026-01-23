@@ -34,8 +34,8 @@ class MainActivity : AppCompatActivity() {
     private val docRef = db.collection("sensorData").document("esp32_01")
 
     // ---------- CALIBRATION CONSTANTS ----------
-    private val emptyDistance = 121.0   // cm (sensor reading when tank is EMPTY)
-    private val fullDistance  = 21.0    // cm (sensor reading when tank is FULL)
+    private val emptyDistance = 130.0   // cm (sensor reading when tank is EMPTY)
+    private val fullDistance  = 30.0    // cm (sensor reading when tank is FULL)
     private val tankVolume = 1000.0     // litres
     // -------------------------------------------
 
