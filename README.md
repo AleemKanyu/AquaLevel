@@ -69,7 +69,7 @@ The system is designed to be **low-cost**, **scalable**, and suitable for real-w
 | TRIG | GPIO Pin |
 | ECHO | GPIO Pin (via voltage divider) |
 
-⚠️ ESP32 GPIO pins are **3.3V tolerant**, so a voltage divider is required for ECHO.
+ESP32 GPIO pins are **3.3V tolerant**, so a voltage divider is required for ECHO.
 
 ---
 
@@ -95,7 +95,7 @@ The system is designed to be **low-cost**, **scalable**, and suitable for real-w
 ## Screenshots
 
 > <img 
-  src="https://github.com/user-attachments/assets/247dbf2f-6d5d-48a8-8bb5-03d8db047357"
+    src="https://github.com/user-attachments/assets/23458882-c76e-497d-b4bf-7cceb51b2d17"
   alt="Aqua Level App Screenshot"
   width="320"
 />
