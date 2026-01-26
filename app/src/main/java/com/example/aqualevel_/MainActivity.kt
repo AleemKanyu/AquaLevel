@@ -33,18 +33,16 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- CALIBRATION CONSTANTS ----------
     private val emptyDistance = 130.0
-    private val fullDistance  = 30.0
+    private val fullDistance = 30.0
     private val tankVolume = 1000.0
     // ------------------------------------------
 
-    // Bubble animation control
     private var bubbleHandler: Handler? = null
     private var bubbleRunnable: Runnable? = null
 
     override fun onStart() {
         super.onStart()
 
-        // Defensive remove
         listener?.remove()
 
         listener = docRef.addSnapshotListener { snapshot, error ->
@@ -63,7 +61,6 @@ class MainActivity : AppCompatActivity() {
 
             value = (safePercent / 100.0) * tankVolume
 
-            // Keeping your original behaviour (*2)
             capacityValue.text = "${value.toInt() * 2} litres"
             percentage.text = "${safePercent.toInt()}%"
 
@@ -73,6 +70,8 @@ class MainActivity : AppCompatActivity() {
                 ((280 * safePercent) / 100).toInt()
             )
             waterLevel.layoutParams = params
+
+
         }
 
         startBubbleAnimation()
@@ -80,10 +79,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-
         listener?.remove()
         listener = null
-
         stopBubbleAnimation()
     }
 
@@ -134,8 +131,6 @@ class MainActivity : AppCompatActivity() {
 
     // -------------------------------------------------
 
-
-
     private fun scheduleBackgroundWorker() {
         val workRequest =
             PeriodicWorkRequestBuilder<WaterLevelWorker>(1, TimeUnit.MINUTES)
@@ -148,49 +143,48 @@ class MainActivity : AppCompatActivity() {
                 workRequest
             )
     }
-}
 
 
-
-fun dpToPx(context: Context, dp: Int): Int {
-    return (dp * context.resources.displayMetrics.density).toInt()
-}
-
-fun spawnBubble(
-    context: Context,
-    waterLevel: FrameLayout
-) {
-    val bubbleSizeDp = (6..12).random()
-    val bubbleSizePx = dpToPx(context, bubbleSizeDp)
-
-    val bubble = View(context)
-
-    val maxLeft = waterLevel.width - bubbleSizePx
-    val leftMargin = if (maxLeft > 0) (0..maxLeft).random() else 0
-
-    bubble.layoutParams = FrameLayout.LayoutParams(
-        bubbleSizePx,
-        bubbleSizePx
-    ).apply {
-        gravity = Gravity.BOTTOM
-        this.leftMargin = leftMargin
-        bottomMargin = 10
+    fun dpToPx(context: Context, dp: Int): Int {
+        return (dp * context.resources.displayMetrics.density).toInt()
     }
 
-    val drawable = GradientDrawable().apply {
-        shape = GradientDrawable.OVAL
-        setColor(0x66FFFFFF)
-    }
+    fun spawnBubble(
+        context: Context,
+        waterLevel: FrameLayout
+    ) {
+        val bubbleSizeDp = (6..12).random()
+        val bubbleSizePx = dpToPx(context, bubbleSizeDp)
 
-    bubble.background = drawable
-    waterLevel.addView(bubble)
+        val bubble = View(context)
 
-    bubble.animate()
-        .translationY(-waterLevel.height.toFloat())
-        .alpha(0f)
-        .setDuration((3000..6000).random().toLong())
-        .withEndAction {
-            waterLevel.removeView(bubble)
+        val maxLeft = waterLevel.width - bubbleSizePx
+        val leftMargin = if (maxLeft > 0) (0..maxLeft).random() else 0
+
+        bubble.layoutParams = FrameLayout.LayoutParams(
+            bubbleSizePx,
+            bubbleSizePx
+        ).apply {
+            gravity = Gravity.BOTTOM
+            this.leftMargin = leftMargin
+            bottomMargin = 10
         }
-        .start()
+
+        val drawable = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(0x66FFFFFF)
+        }
+
+        bubble.background = drawable
+        waterLevel.addView(bubble)
+
+        bubble.animate()
+            .translationY(-waterLevel.height.toFloat())
+            .alpha(0f)
+            .setDuration((3000..6000).random().toLong())
+            .withEndAction {
+                waterLevel.removeView(bubble)
+            }
+            .start()
+    }
 }

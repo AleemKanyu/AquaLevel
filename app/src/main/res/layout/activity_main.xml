@@ -56,7 +56,14 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
         </LinearLayout>
+<ImageButton
+    android:layout_width="50dp"
+    android:layout_height="match_parent"
+    android:background="@drawable/dark"
+    android:layout_marginRight="15dp"
+    >
 
+</ImageButton>
 
     </LinearLayout>
 
@@ -64,7 +71,7 @@
         android:id="@+id/scrollBar"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginBottom="100dp"
+
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -75,72 +82,77 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="10dp">
+
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_marginHorizontal="20dp"
                 android:layout_height="330dp"
                 android:layout_gravity="center_horizontal"
-                android:background="@drawable/bg_card"
-                >
+                android:layout_marginHorizontal="20dp"
+                android:background="@drawable/bg_card">
 
                 <FrameLayout
-                    android:id="@+id/tankContainer"
-                    android:layout_width="200dp"
-                    android:layout_height="300dp"
-                    android:layout_gravity="center"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:layout_margin="50dp">
-
-
-                    <FrameLayout
-                        android:id="@+id/waterLevel"
-                        android:layout_width="match_parent"
-                        android:layout_height="140dp"
-                        android:layout_gravity="bottom"
-                        android:layout_margin="5dp"
-                        android:background="@drawable/bg_water_fill"
-                        android:clipToOutline="true" />
-
+                android:id="@+id/tankContainer"
+                android:layout_width="200dp"
+                android:layout_height="300dp"
+                android:layout_gravity="center"
+                android:layout_margin="50dp"
+                android:clipChildren="false"
+                android:clipToPadding="false">
                     <FrameLayout
                         android:id="@+id/glass"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_gravity="center"
                         android:background="@drawable/tank_glass_overlay"
-
                         />
 
-                    <TextView
-                        android:id="@+id/percentage"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:elevation="5dp"
-                        android:shadowColor="#40000000"
-                        android:shadowDx="1"
-                        android:shadowDy="4"
-                        android:shadowRadius="8"
-                        android:text="45%"
-                        android:textColor="@android:color/white"
-                        android:textSize="48sp"
-                        android:textStyle="bold" />
+
+                    <FrameLayout
+                        android:id="@+id/waterLevel"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:layout_gravity="bottom"
+                        android:layout_margin="5dp"
+                        android:background="@drawable/bg_water_gradient"
+                        android:clipToOutline="true">
+
+
+
+                    </FrameLayout>
+
+
+
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:elevation="5dp"
-                        android:letterSpacing="0.2"
-                        android:shadowDx="10"
-                        android:shadowDy="10"
-                        android:shadowRadius="10"
-                        android:text="CAPACITY"
-                        android:textColor="@color/white"
-                        android:textSize="12sp"
-                        android:translationY="35dp" />
+                    android:id="@+id/percentage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:elevation="5dp"
+                    android:shadowColor="#40000000"
+                    android:shadowDx="1"
+                    android:shadowDy="4"
+                    android:shadowRadius="8"
+                    android:text="45%"
+                    android:textColor="@android:color/white"
+                    android:textSize="48sp"
+                    android:textStyle="bold" />
 
-                </FrameLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:elevation="5dp"
+                    android:letterSpacing="0.2"
+                    android:shadowDx="10"
+                    android:shadowDy="10"
+                    android:shadowRadius="10"
+                    android:text="CAPACITY"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:translationY="35dp" />
+
+            </FrameLayout>
 
 
             </FrameLayout>
@@ -151,25 +163,24 @@
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_marginHorizontal="20dp"
                 android:layout_height="330dp"
                 android:layout_gravity="center_horizontal"
-                android:background="@drawable/bg_card"
-                >
+                android:layout_marginHorizontal="20dp"
+                android:background="@drawable/bg_card">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
-                    android:orientation="vertical"
-
                     android:layout_gravity="center_horizontal"
+
+                    android:orientation="vertical"
 
                     >
 
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_margin="20dp"
+                        android:layout_marginTop="20dp"
                         android:gravity="left"
                         android:orientation="horizontal">
 
@@ -197,11 +208,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginLeft="20dp"
-                        android:layout_marginBottom="20dp"
-                        android:backgroundTint="@color/black"
+                        android:layout_marginBottom="10dp"
+
                         android:text="Analysis for the current week"
-                        android:textColor="@color/black">
+                        android:textColor="#64748B">
 
                     </TextView>
 
@@ -210,6 +220,7 @@
                         android:layout_height="wrap_content"
                         android:gravity="center_horizontal"
                         android:orientation="horizontal">
+
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -247,6 +258,7 @@
                                 android:textStyle="bold" />
 
                         </LinearLayout>
+
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -284,6 +296,7 @@
                                 android:textStyle="bold" />
 
                         </LinearLayout>
+
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -321,6 +334,7 @@
                                 android:textStyle="bold" />
 
                         </LinearLayout>
+
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -358,6 +372,7 @@
                                 android:textStyle="bold" />
 
                         </LinearLayout>
+
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -395,6 +410,7 @@
                                 android:textStyle="bold" />
 
                         </LinearLayout>
+
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -432,6 +448,7 @@
                                 android:textStyle="bold" />
 
                         </LinearLayout>
+
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -481,9 +498,11 @@
                 android:layout_gravity="center"
                 android:background="@drawable/bg_card"
                 android:textAlignment="center" />
+
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="20dp" />
+
             <LinearLayout
                 android:id="@+id/statsRow"
                 android:layout_width="match_parent"
@@ -510,12 +529,15 @@
                         app:tint="#13B6EC" />
 
                     <TextView
-                        android:layout_width="200px"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
                         android:text="TOTAL"
+                        android:layout_marginTop="8dp"
                         android:textAlignment="textStart"
                         android:textColor="#000000"
-                        android:textSize="10dp" />
+                        android:textSize="12dp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/capacityValue"
@@ -549,10 +571,13 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:fontFamily="monospace"
                         android:text="DAYS LEFT"
                         android:textAlignment="textStart"
                         android:textColor="#1E2021"
-                        android:textSize="10dp" />
+                        android:textSize="12dp"
+                        android:textStyle="bold" />
 
 
                     <TextView
@@ -577,19 +602,20 @@
 
     <View
         android:id="@+id/view2"
-        android:layout_width="360dp"
-        android:layout_height="75dp"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="30dp"
         android:background="@drawable/bg_card"
-        android:elevation="6dp"
+        android:elevation="3dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <FrameLayout
         android:id="@+id/frameLayout"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
         android:layout_marginBottom="33dp"
         android:elevation="10dp"
         android:padding="10dp"
@@ -624,7 +650,7 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_gravity="center"
-            android:background="@drawable/statistics"
+            android:background="@drawable/graph_analytics"
             android:padding="4dp" />
     </FrameLayout>
 
@@ -641,10 +667,10 @@
 
         <ImageView
             android:id="@+id/buttonGraph"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:layout_gravity="center"
-            android:background="@drawable/user"
+            android:background="@drawable/setting"
             android:padding="4dp" />
     </FrameLayout>
 
