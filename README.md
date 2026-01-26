@@ -1,4 +1,4 @@
-# Aqua Level 💧
+# Aqua Level 
 **Smart Water Level Monitoring System using ESP32 & Android**
 
 ![Platform](https://img.shields.io/badge/platform-ESP32%20%7C%20Android-blue)
