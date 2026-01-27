@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Light background -->
+    <path
+        android:fillColor="#1A1F36"
+        android:pathData="M0,0h108v108h-108z"/>
+
+    <!-- Dark crescent -->
+    <path
+        android:fillColor="#F4F7FA"
+        android:pathData="
+            M83,54
+            a30,30 0 1,1 -22,-27
+            a24,24 0 1,0 22,27
+        "/>
+</vector>

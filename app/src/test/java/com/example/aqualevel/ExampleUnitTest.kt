@@ -1,4 +1,4 @@
-package com.example.aqualevel_
+package com.example.aqualevel
 
 import org.junit.Test
 

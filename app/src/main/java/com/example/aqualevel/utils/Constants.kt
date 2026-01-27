@@ -1,4 +1,4 @@
-package com.example.aqualevel_.utils
+package com.example.aqualevel.utils
 
 object Constants{
     const val DATABASE_VERSION=1

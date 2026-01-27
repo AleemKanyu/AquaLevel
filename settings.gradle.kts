@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AquaLevel_"
+rootProject.name = "AquaLevel"
 include(":app")
  

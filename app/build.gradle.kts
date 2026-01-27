@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.aqualevel_"
+    namespace = "com.example.aqualevel"
     compileSdk = 36
 
     defaultConfig {

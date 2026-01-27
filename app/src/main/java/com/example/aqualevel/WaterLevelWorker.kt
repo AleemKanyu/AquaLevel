@@ -1,4 +1,4 @@
-package com.example.aqualevel_
+package com.example.aqualevel
 
 import android.content.Context
 import androidx.work.Worker
@@ -7,14 +7,11 @@ import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.FirebaseFirestore
 
 /**
- * WaterLevelWorker
- *
  * Background worker that:
  * - Fetches latest water level from Firestore
  * - Validates data freshness
  * - Performs logic checks (no notifications for now)
  *
- * PRODUCT-READY VERSION
  */
 class WaterLevelWorker(
     context: Context,
@@ -30,7 +27,7 @@ class WaterLevelWorker(
             .collection("sensorData")
             .document("esp32_01")
 
-        // Fetch document synchronously (correct way in Worker)
+        // Fetch document synchronously
         val snapshot = try {
             Tasks.await(docRef.get())
         } catch (e: Exception) {
@@ -57,7 +54,7 @@ class WaterLevelWorker(
         }
 
         // ---- BUSINESS LOGIC PLACEHOLDER ----
-        // You can add logic here later (alerts, analytics, sync, etc.)
+        // alerts, analytics, sync, etc
         // Example:
         // if (distance < 200) { ... }
 

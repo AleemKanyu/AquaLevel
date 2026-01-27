@@ -1,9 +1,9 @@
-package com.example.aqualevel_.data
+package com.example.aqualevel.data
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import com.example.aqualevel_.utils.Constants
+import com.example.aqualevel.utils.Constants
 
 class DatabaseHandler(val context: Context) : SQLiteOpenHelper(
     context, Constants.DATABASE_NAME, null,

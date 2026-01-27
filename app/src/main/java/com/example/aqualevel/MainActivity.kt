@@ -1,11 +1,7 @@
-package com.example.aqualevel_
-
-import android.animation.ObjectAnimator
-import android.app.*
+package com.example.aqualevel
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.*
-import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.*
@@ -70,10 +66,7 @@ class MainActivity : AppCompatActivity() {
                 ((280 * safePercent) / 100).toInt()
             )
             waterLevel.layoutParams = params
-
-
         }
-
         startBubbleAnimation()
     }
 
