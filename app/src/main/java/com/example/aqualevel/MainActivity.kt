@@ -2,6 +2,7 @@ package com.example.aqualevel
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.*
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.*
@@ -29,7 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- CALIBRATION CONSTANTS ----------
     private val emptyDistance = 130.0
-    private val fullDistance = 30.0
+    private val fullDistance = 20.0
     private val tankVolume = 1000.0
     // ------------------------------------------
 
@@ -81,7 +82,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
@@ -99,10 +99,17 @@ class MainActivity : AppCompatActivity() {
         button.setOnClickListener {
             db.collection("sensorCommands")
                 .document("esp32_01")
-                .set(mapOf("refresh" to true))
+                .update("refresh", true)
+                .addOnSuccessListener {
+                    Log.d("MANUAL", "Refresh flag set")
+                }
+                .addOnFailureListener {
+                    Log.e("MANUAL", "Failed to set refresh", it)
+                }
+
         }
     }
-
+    private fun add(){}
     // ---------------- BUBBLE ANIMATION ----------------
 
     private fun startBubbleAnimation() {
