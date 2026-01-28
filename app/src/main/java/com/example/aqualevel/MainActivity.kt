@@ -109,7 +109,7 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
-    private fun add(){}
+
     // ---------------- BUBBLE ANIMATION ----------------
 
     private fun startBubbleAnimation() {

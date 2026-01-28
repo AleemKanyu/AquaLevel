@@ -112,18 +112,9 @@
                 android:clipChildren="false"
                 android:clipToPadding="false">
                     <FrameLayout
-                        android:id="@+id/glass"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_gravity="center"
-                        android:background="@drawable/tank_glass_overlay"
-                        />
-
-
-                    <FrameLayout
                         android:id="@+id/waterLevel"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
+                        android:layout_height="280dp"
                         android:layout_gravity="bottom"
                         android:layout_margin="5dp"
                         android:background="@drawable/bg_water"
@@ -132,6 +123,16 @@
 
 
                     </FrameLayout>
+                    <FrameLayout
+                        android:id="@+id/glass"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center"
+                        android:background="@drawable/tank_glass_overlay"
+                        />
+
+
+
 
 
 
