@@ -33,13 +33,13 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/colo"
+                android:id="@+id/welcome"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:fontFamily=""
                 android:gravity="center"
-                android:text="Welcome Back"
+                android:text="@string/welcome"
                 android:textColor="@color/black"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -51,7 +51,7 @@
                 android:layout_weight="1"
                 android:fontFamily="sans-serif"
                 android:gravity="center"
-                android:text="User"
+                android:text="@string/user_name"
                 android:textColor="@color/black"
                 android:textSize="20sp"
                 android:textStyle="bold" />
