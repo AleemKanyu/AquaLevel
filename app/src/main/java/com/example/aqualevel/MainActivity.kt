@@ -46,6 +46,8 @@ class MainActivity : AppCompatActivity() {
             if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
 
             val distance = snapshot.getDouble("distance") ?: return@addSnapshotListener
+            val time1= snapshot.getDouble("timestamp")?:return@addSnapshotListener
+
 
             val clampedDistance =
                 distance.coerceIn(fullDistance, emptyDistance)
