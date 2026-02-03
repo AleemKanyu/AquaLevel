@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Soft blue background (same as card family) -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#E0F2FE"/>
+        </shape>
+    </item>
+
+    <!-- Clock icon -->
+    <item
+        android:width="18dp"
+        android:height="18dp"
+        android:gravity="center">
+        <vector
+            android:width="18dp"
+            android:height="18dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+
+            <!-- Clock circle -->
+            <path
+                android:fillColor="@android:color/transparent"
+                android:strokeColor="#0F172A"
+                android:strokeWidth="2"
+                android:strokeLineCap="round"
+                android:pathData="M12,4 a8,8 0 1,1 0,16 a8,8 0 1,1 0,-16"/>
+
+            <!-- Hour hand -->
+            <path
+                android:strokeColor="#0F172A"
+                android:strokeWidth="2"
+                android:strokeLineCap="round"
+                android:pathData="M12,7 v5"/>
+
+            <!-- Minute hand -->
+            <path
+                android:strokeColor="#0F172A"
+                android:strokeWidth="2"
+                android:strokeLineCap="round"
+                android:pathData="M12,12 l4,2"/>
+        </vector>
+    </item>
+
+</layer-list>

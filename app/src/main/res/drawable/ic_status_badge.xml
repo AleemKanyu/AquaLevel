@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Background -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#ECFCCB"/>
+        </shape>
+    </item>
+
+    <!-- Icon -->
+    <item
+        android:width="18dp"
+        android:height="18dp"
+        android:gravity="center">
+        <vector
+            android:width="18dp"
+            android:height="18dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+
+            <!-- Center dot -->
+            <path
+                android:fillColor="#0F172A"
+                android:pathData="M12,12 m-1.5,0 a1.5,1.5 0 1,0 3,0 a1.5,1.5 0 1,0 -3,0"/>
+
+            <!-- Inner ring -->
+            <path
+                android:fillColor="@android:color/transparent"
+                android:strokeColor="#0F172A"
+                android:strokeWidth="2"
+                android:pathData="M7,12 a5,5 0 1,1 10,0"/>
+
+            <!-- Outer ring -->
+            <path
+                android:fillColor="@android:color/transparent"
+                android:strokeColor="#0F172A"
+                android:strokeWidth="2"
+                android:pathData="M4,12 a8,8 0 1,1 16,0"/>
+        </vector>
+    </item>
+
+</layer-list>

@@ -1,6 +1,7 @@
 package com.example.aqualevel
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.os.*
 import android.util.Log
@@ -14,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.work.*
 import com.google.firebase.firestore.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.log
 
 class MainActivity : AppCompatActivity() {
     private lateinit var analyticsPage: FrameLayout
@@ -115,6 +117,8 @@ class MainActivity : AppCompatActivity() {
 
         }
         analyticsPage.setOnClickListener {
+            val intent= Intent(this, Analytics::class.java)
+            startActivity(intent)
 
         }
     }
