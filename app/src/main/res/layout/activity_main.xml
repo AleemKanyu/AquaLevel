@@ -649,7 +649,7 @@
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/settings"
+        android:id="@+id/analyticsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:elevation="7dp"
@@ -660,7 +660,7 @@
         app:layout_constraintTop_toTopOf="@+id/view2">
 
         <ImageView
-            android:id="@+id/settingsButton"
+            android:id="@+id/analyticsImage"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_gravity="center"
@@ -669,7 +669,7 @@
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/graph"
+        android:id="@+id/settingsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:elevation="7dp"
@@ -680,7 +680,7 @@
         app:layout_constraintTop_toTopOf="@+id/view2">
 
         <ImageView
-            android:id="@+id/buttonGraph"
+            android:id="@+id/settingsImage"
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:layout_gravity="center"

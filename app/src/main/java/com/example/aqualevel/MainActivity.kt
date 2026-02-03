@@ -1,4 +1,5 @@
 package com.example.aqualevel
+
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.*
@@ -15,6 +16,8 @@ import com.google.firebase.firestore.*
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var analyticsPage: FrameLayout
+    private lateinit var settings: FrameLayout
 
     private lateinit var button: ImageView
     private lateinit var capacityValue: TextView
@@ -46,7 +49,7 @@ class MainActivity : AppCompatActivity() {
             if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
 
             val distance = snapshot.getDouble("distance") ?: return@addSnapshotListener
-            val time1= snapshot.getDouble("timestamp")?:return@addSnapshotListener
+            val time1 = snapshot.getDouble("timestamp") ?: return@addSnapshotListener
 
 
             val clampedDistance =
@@ -89,7 +92,8 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
             insets
         }
-
+        analyticsPage = findViewById(R.id.analyticsButton)
+        settings=findViewById(R.id.settingsButton)
         button = findViewById(R.id.buttonCheck)
         capacityValue = findViewById(R.id.capacityValue)
         percentage = findViewById(R.id.percentage)
@@ -108,6 +112,9 @@ class MainActivity : AppCompatActivity() {
                 .addOnFailureListener {
                     Log.e("MANUAL", "Failed to set refresh", it)
                 }
+
+        }
+        analyticsPage.setOnClickListener {
 
         }
     }
