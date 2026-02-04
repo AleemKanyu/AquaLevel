@@ -79,14 +79,17 @@
     </LinearLayout>
 
     <ScrollView
-        android:layout_width="410dp"
-        android:layout_height="646dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/view2"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/topBar"
-        app:layout_constraintVertical_bias="1.0">
+        app:layout_constraintTop_toBottomOf="@+id/topBar"
+        app:layout_constraintVertical_bias="0.5"
+        android:layout_marginTop="70dp">
+
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -102,11 +105,14 @@
                 android:paddingBottom="10dp">
 
                 <FrameLayout
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:stateListAnimator="@animator/card_press_anim"
                     android:layout_width="wrap_content"
                     android:layout_height="160dp"
                     android:layout_margin="8dp"
                     android:background="@drawable/bg_purple_card"
-                    android:elevation="6dp"
+                    android:elevation="2dp"
                     app:cardCornerRadius="32dp">
 
                     <LinearLayout
@@ -151,27 +157,50 @@
 
                         </Space>
 
-                        <TextView
-                            android:id="@+id/percentage"
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="72%"
-                            android:textColor="@android:color/black"
-                            android:textSize="32sp"
-                            android:textStyle="bold" />
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/percentage"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="72"
+                                android:textColor="@android:color/black"
+                                android:textSize="32sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="%"
+                                android:textColor="#5D5D5D"
+                                android:textSize="28dp"
+
+
+                                android:textStyle="bold">
+
+                            </TextView>
+                        </LinearLayout>
+
                     </LinearLayout>
                 </FrameLayout>
 
                 <FrameLayout
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:stateListAnimator="@animator/card_press_anim"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_margin="8dp"
                     android:background="@drawable/bg_teal_card"
-                    android:elevation="6dp"
+                    android:elevation="2dp"
                     app:cardCornerRadius="32dp"
                     app:cardElevation="8dp">
 
                     <LinearLayout
+
                         android:layout_width="174dp"
                         android:layout_height="match_parent"
                         android:orientation="vertical"
@@ -213,18 +242,33 @@
 
                         </Space>
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:orientation="horizontal">
 
-                            android:text="120L"
-                            android:textColor="@android:color/black"
-                            android:textSize="32sp"
-                            android:textStyle="bold" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="120"
+                                android:textColor="@android:color/black"
+                                android:textSize="32sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="L"
+                                android:textColor="#5D5D5D"
+                                android:textSize="22sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
                     </LinearLayout>
                 </FrameLayout>
 
             </LinearLayout>
+
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -235,11 +279,14 @@
                 android:paddingBottom="10dp">
 
                 <FrameLayout
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:stateListAnimator="@animator/card_press_anim"
                     android:layout_width="wrap_content"
                     android:layout_height="160dp"
                     android:layout_margin="8dp"
                     android:background="@drawable/bg_lime_card"
-                    android:elevation="6dp"
+                    android:elevation="2dp"
                     app:cardCornerRadius="32dp">
 
                     <LinearLayout
@@ -297,13 +344,16 @@
 
 
                 <FrameLayout
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:stateListAnimator="@animator/card_press_anim"
                     android:layout_width="170dp"
                     android:layout_height="160dp"
                     android:layout_margin="8dp"
                     android:background="@drawable/bg_blue_card"
-                    android:elevation="6dp"
+                    android:elevation="2dp"
                     app:cardCornerRadius="32dp"
-                    app:cardElevation="8dp">
+                    app:cardElevation="2dp">
 
 
                     <LinearLayout
@@ -348,23 +398,370 @@
 
                         </Space>
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:orientation="horizontal">
 
-                            android:text="5 Days"
-                            android:textColor="@android:color/black"
-                            android:textSize="32sp"
-                            android:textStyle="bold" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="5"
+                                android:textColor="@android:color/black"
+                                android:textSize="32sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Days"
+                                android:textColor="#5D5D5D"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
                     </LinearLayout>
                 </FrameLayout>
 
 
             </LinearLayout>
 
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginHorizontal="20dp"
+                android:paddingBottom="30dp"
+                android:background="@drawable/bg_card">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+
+                    android:orientation="vertical"
+
+                    >
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:gravity="left"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@drawable/bg_icon_rounded"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_chart_bars"
+                            app:tint="#A1C9F1" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_marginLeft="4dp"
+                            android:backgroundTint="@color/black"
+                            android:text="Weekly Usage"
+                            android:textColor="#000000"
+                            android:textSize="24sp"
+                            android:textStyle="bold">
+
+                        </TextView>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+
+                        android:text="Analysis for the current week"
+                        android:textColor="#64748B">
+
+                    </TextView>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/mondayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/monday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="M"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/tuesdayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/tuesday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="T"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/wedBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/wed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="W"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/thursdayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/thursday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="T"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/fridayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/friday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="F"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/saturdayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/saturday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="S"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="160dp">
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#F0F7FA" />
+
+                                <View
+                                    android:id="@+id/sundayBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="60dp"
+                                    android:layout_gravity="bottom"
+                                    android:background="@drawable/bg_bar_shape"
+                                    android:backgroundTint="#A1C9F1" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/sunday"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="S"
+                                android:textColor="#64748B"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+            </FrameLayout>
+<Space
+    android:layout_width="match_parent"
+    android:layout_height="120dp">
+
+</Space>
         </LinearLayout>
-
-
     </ScrollView>
 
     <View
@@ -381,6 +778,9 @@
 
     <FrameLayout
         android:id="@+id/homeButton"
+        android:clickable="true"
+        android:focusable="true"
+        android:stateListAnimator="@animator/card_press_anim"
         android:layout_width="70dp"
         android:layout_height="70dp"
         android:layout_marginBottom="33dp"
@@ -403,6 +803,9 @@
 
     <FrameLayout
         android:id="@+id/analyticsButton"
+        android:clickable="true"
+        android:focusable="true"
+        android:stateListAnimator="@animator/card_press_anim"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_fab"
@@ -429,6 +832,9 @@
 
     <FrameLayout
         android:id="@+id/settingsButton"
+        android:clickable="true"
+        android:focusable="true"
+        android:stateListAnimator="@animator/card_press_anim"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:elevation="7dp"
