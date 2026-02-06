@@ -18,5 +18,5 @@ interface ReadingsDao{
     fun clearAll(Readings: Readings)
 
     @Query("SELECT * FROM Readings ORDER BY id ASC")
-    fun fetchALL(): LiveData<Readings>
+    fun fetchALL(): LiveData<MutableList<Readings>>
 }
