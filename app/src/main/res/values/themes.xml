@@ -2,8 +2,10 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.AquaLevel_" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-
+        <item name="android:windowBackground">@color/background_light</item>
+        <item name="colorSurface">@color/card_background_light</item>
+        <item name="android:textColorPrimary">@color/text_primary_light</item>
+        <item name="android:textColorSecondary">@color/text_secondary_light</item>
     </style>
 
     <style name="Theme.AquaLevel_" parent="Base.Theme.AquaLevel_" />

@@ -4,7 +4,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F7FA"
+    android:background="?android:windowBackground"
     android:padding="4dp">
 
     <LinearLayout
@@ -40,7 +40,7 @@
                 android:fontFamily=""
                 android:gravity="center"
                 android:text="@string/welcome"
-                android:textColor="@color/black"
+                android:textColor="?android:textColorPrimary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -52,15 +52,28 @@
                 android:fontFamily="sans-serif"
                 android:gravity="center"
                 android:text="@string/user_name"
-                android:textColor="@color/black"
+                android:textColor="?android:textColorPrimary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <FrameLayout
+            android:id="@+id/themeToggle"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_icon_rounded"
+            android:elevation="2dp">
 
-
-
-
+            <ImageView
+                android:id="@+id/themeIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_moon" />
+        </FrameLayout>
 
     </LinearLayout>
 
@@ -68,7 +81,6 @@
         android:id="@+id/scrollBar"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -79,89 +91,74 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="10dp">
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@drawable/bg_card"
-    android:layout_marginHorizontal="20dp"
-    >
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="330dp"
-        android:layout_gravity="center_horizontal"
-
-        >
-
-        <FrameLayout
-            android:id="@+id/tankContainer"
-            android:layout_width="200dp"
-            android:layout_height="300dp"
-            android:layout_gravity="center"
-            android:layout_margin="50dp"
-            android:clipChildren="false"
-            android:clipToPadding="false">
-            <FrameLayout
-                android:id="@+id/waterLevel"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="280dp"
-                android:layout_gravity="bottom"
-                android:layout_margin="5dp"
-                android:background="@drawable/bg_water"
-                android:clipToOutline="true">
-
-
-
-            </FrameLayout>
-            <FrameLayout
-                android:id="@+id/glass"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@drawable/tank_glass_overlay"
-                />
-
-
-
-
-
-
-
-            <TextView
-                android:id="@+id/percentage"
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:elevation="5dp"
-                android:shadowColor="#40000000"
-                android:shadowDx="1"
-                android:shadowDy="4"
-                android:shadowRadius="8"
-                android:text="100%"
-                android:textColor="@android:color/white"
-                android:textSize="48sp"
-                android:textStyle="bold" />
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:backgroundTint="?colorSurface"
+                android:layout_marginHorizontal="20dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:elevation="5dp"
-                android:letterSpacing="0.2"
-                android:shadowDx="10"
-                android:shadowDy="10"
-                android:shadowRadius="10"
-                android:text="CAPACITY"
-                android:textColor="@color/white"
-                android:textSize="12sp"
-                android:translationY="35dp" />
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="330dp"
+                    android:layout_gravity="center_horizontal">
 
-        </FrameLayout>
+                    <FrameLayout
+                        android:id="@+id/tankContainer"
+                        android:layout_width="200dp"
+                        android:layout_height="300dp"
+                        android:layout_gravity="center"
+                        android:layout_margin="50dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false">
+                        <FrameLayout
+                            android:id="@+id/waterLevel"
+                            android:layout_width="match_parent"
+                            android:layout_height="280dp"
+                            android:layout_gravity="bottom"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/bg_water"
+                            android:clipToOutline="true" />
+                        <FrameLayout
+                            android:id="@+id/glass"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="center"
+                            android:background="@drawable/tank_glass_overlay" />
 
+                        <TextView
+                            android:id="@+id/percentage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:elevation="5dp"
+                            android:shadowColor="#40000000"
+                            android:shadowDx="1"
+                            android:shadowDy="4"
+                            android:shadowRadius="8"
+                            android:text="100%"
+                            android:textColor="@android:color/white"
+                            android:textSize="48sp"
+                            android:textStyle="bold" />
 
-    </FrameLayout>
-</LinearLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:elevation="5dp"
+                            android:letterSpacing="0.2"
+                            android:shadowDx="10"
+                            android:shadowDy="10"
+                            android:shadowRadius="10"
+                            android:text="CAPACITY"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:translationY="35dp" />
+                    </FrameLayout>
+                </FrameLayout>
+            </LinearLayout>
 
             <Space
                 android:layout_width="match_parent"
@@ -172,16 +169,14 @@
                 android:layout_height="330dp"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginHorizontal="20dp"
-                android:background="@drawable/bg_card">
+                android:background="@drawable/bg_card"
+                android:backgroundTint="?colorSurface">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_gravity="center_horizontal"
-
-                    android:orientation="vertical"
-
-                    >
+                    android:orientation="vertical">
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -202,24 +197,18 @@
                             android:layout_width="wrap_content"
                             android:layout_height="match_parent"
                             android:layout_marginLeft="4dp"
-                            android:backgroundTint="@color/black"
                             android:text="Daily Usage"
-                            android:textColor="#000000"
+                            android:textColor="?android:textColorPrimary"
                             android:textSize="24sp"
-                            android:textStyle="bold">
-
-                        </TextView>
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
-
                         android:text="Analysis for the current week"
-                        android:textColor="#64748B">
-
-                    </TextView>
+                        android:textColor="?android:textColorSecondary" />
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -242,7 +231,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="#F0F7FA" />
+                                    android:backgroundTint="?android:windowBackground" />
 
                                 <View
                                     android:id="@+id/mondayBar"
@@ -259,12 +248,12 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
                                 android:text="M"
-                                android:textColor="#64748B"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
-
                         </LinearLayout>
 
+                        <!-- Repeating for other days, using the same pattern -->
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -280,7 +269,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="#F0F7FA" />
+                                    android:backgroundTint="?android:windowBackground" />
 
                                 <View
                                     android:id="@+id/tuesdayBar"
@@ -297,10 +286,9 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
                                 android:text="T"
-                                android:textColor="#64748B"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
-
                         </LinearLayout>
 
                         <LinearLayout
@@ -318,7 +306,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="#F0F7FA" />
+                                    android:backgroundTint="?android:windowBackground" />
 
                                 <View
                                     android:id="@+id/wedBar"
@@ -335,10 +323,9 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
                                 android:text="W"
-                                android:textColor="#64748B"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
-
                         </LinearLayout>
 
                         <LinearLayout
@@ -356,7 +343,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="#F0F7FA" />
+                                    android:backgroundTint="?android:windowBackground" />
 
                                 <View
                                     android:id="@+id/thursdayBar"
@@ -373,10 +360,9 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
                                 android:text="T"
-                                android:textColor="#64748B"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
-
                         </LinearLayout>
 
                         <LinearLayout
@@ -394,7 +380,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="#F0F7FA" />
+                                    android:backgroundTint="?android:windowBackground" />
 
                                 <View
                                     android:id="@+id/fridayBar"
@@ -411,10 +397,9 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
                                 android:text="F"
-                                android:textColor="#64748B"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
-
                         </LinearLayout>
 
                         <LinearLayout
@@ -432,7 +417,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="#F0F7FA" />
+                                    android:backgroundTint="?android:windowBackground" />
 
                                 <View
                                     android:id="@+id/saturdayBar"
@@ -449,10 +434,9 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
                                 android:text="S"
-                                android:textColor="#64748B"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
-
                         </LinearLayout>
 
                         <LinearLayout
@@ -470,7 +454,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="#F0F7FA" />
+                                    android:backgroundTint="?android:windowBackground" />
 
                                 <View
                                     android:id="@+id/sundayBar"
@@ -487,23 +471,13 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
                                 android:text="S"
-                                android:textColor="#64748B"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
-
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
-
             </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/Capcity"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="@drawable/bg_card"
-                android:textAlignment="center" />
 
             <Space
                 android:layout_width="match_parent"
@@ -524,6 +498,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
+                    android:backgroundTint="?colorSurface"
                     android:gravity="start"
                     android:orientation="vertical"
                     android:padding="16dp">
@@ -541,7 +516,7 @@
                         android:text="TOTAL"
                         android:layout_marginTop="8dp"
                         android:textAlignment="textStart"
-                        android:textColor="#000000"
+                        android:textColor="?android:textColorPrimary"
                         android:textSize="12dp"
                         android:textStyle="bold" />
 
@@ -551,10 +526,9 @@
                         android:layout_height="wrap_content"
                         android:text="1,300 L"
                         android:textAlignment="textStart"
-                        android:textColor="@color/black"
+                        android:textColor="?android:textColorPrimary"
                         android:textSize="20dp"
                         android:textStyle="bold" />
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -563,6 +537,7 @@
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_card"
+                    android:backgroundTint="?colorSurface"
                     android:gravity="left"
                     android:orientation="vertical"
                     android:padding="16dp">
@@ -581,7 +556,7 @@
                         android:fontFamily="monospace"
                         android:text="DAYS LEFT"
                         android:textAlignment="textStart"
-                        android:textColor="#1E2021"
+                        android:textColor="?android:textColorPrimary"
                         android:textSize="12dp"
                         android:textStyle="bold" />
 
@@ -591,7 +566,7 @@
                         android:layout_height="wrap_content"
                         android:text="~28 Days"
                         android:textAlignment="center"
-                        android:textColor="@color/black"
+                        android:textColor="?android:textColorPrimary"
                         android:textSize="20dp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -599,9 +574,7 @@
 
             <Space
                 android:layout_width="match_parent"
-                android:layout_height="90dp">
-
-            </Space>
+                android:layout_height="90dp" />
         </LinearLayout>
     </ScrollView>
 
@@ -613,6 +586,7 @@
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="30dp"
         android:background="@drawable/bg_card"
+        android:backgroundTint="?colorSurface"
         android:elevation="3dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

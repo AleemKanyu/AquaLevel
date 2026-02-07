@@ -5,9 +5,11 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
@@ -30,6 +32,9 @@ class Analytics : AppCompatActivity() {
     private lateinit var dailyUsageText: TextView
     private lateinit var daysLeftText: TextView
 
+    private lateinit var themeToggle: FrameLayout
+    private lateinit var themeIcon: ImageView
+
     // ---------- CALIBRATION CONSTANTS (Matching MainActivity) ----------
     private val emptyDistance = 130.0
     private val fullDistance = 20.0
@@ -50,7 +55,7 @@ class Analytics : AppCompatActivity() {
 
         homeButton = findViewById(R.id.homeButton)
         homeButton.setOnClickListener {
-            finish() // Use finish() instead of starting a new MainActivity to avoid stacking activities
+            finish()
         }
 
         mondayBar = findViewById(R.id.mondayBar)
@@ -65,6 +70,21 @@ class Analytics : AppCompatActivity() {
         dailyUsageText = findViewById(R.id.dailyUsageValue)
         daysLeftText = findViewById(R.id.daysLeftValue)
 
+        // Theme Toggle Setup
+        themeToggle = findViewById(R.id.themeToggle)
+        themeIcon = findViewById(R.id.themeIcon)
+        updateThemeIcon()
+
+        themeToggle.setOnClickListener {
+            val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
+            if (isDark) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            }
+            updateThemeIcon()
+        }
+
         val viewModel = ViewModelProvider(this)[ReadingViewModel::class.java]
 
         // -------- Weekly bars --------
@@ -77,7 +97,6 @@ class Analytics : AppCompatActivity() {
 
             val maxBarHeight = dpToPx(160)
 
-            // Reset bars
             bars.forEach { bar ->
                 val params = bar.layoutParams
                 params.height = dpToPx(8)
@@ -85,15 +104,12 @@ class Analytics : AppCompatActivity() {
             }
 
             days.take(7).forEachIndexed { index, usage ->
-                // usage.minLevel and maxLevel are distances.
-                // used distance = maxDist - minDist (e.g. 130 - 20 = 110 used)
                 val usedDist = (usage.maxLevel - usage.minLevel).coerceAtLeast(0.0)
                 val totalDistRange = emptyDistance - fullDistance
                 val normalized = (usedDist / totalDistRange).coerceIn(0.0, 1.0)
                 
                 val barHeight = (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(8))
 
-                // The logic in MainActivity uses 6 - index, assuming days are DESC
                 val barIndex = 6 - index
                 if (barIndex in bars.indices) {
                     val params = bars[barIndex].layoutParams
@@ -139,6 +155,11 @@ class Analytics : AppCompatActivity() {
                 daysLeftText.text = "--"
             }
         }
+    }
+
+    private fun updateThemeIcon() {
+        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
+        themeIcon.setImageResource(if (isDark) R.drawable.ic_sun else R.drawable.ic_moon)
     }
 
     private fun dpToPx(dp: Int): Int {

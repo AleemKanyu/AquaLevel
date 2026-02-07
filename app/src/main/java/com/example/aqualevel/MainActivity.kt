@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
@@ -28,6 +29,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var analyticsPage: FrameLayout
     private lateinit var settings: FrameLayout
+    private lateinit var themeToggle: FrameLayout
+    private lateinit var themeIcon: ImageView
 
     private lateinit var button: ImageView
     private lateinit var capacityValue: TextView
@@ -114,6 +117,21 @@ class MainActivity : AppCompatActivity() {
         saturdayBar = findViewById(R.id.saturdayBar)
         sundayBar = findViewById(R.id.sundayBar)
 
+        // Theme Toggle Setup
+        themeToggle = findViewById(R.id.themeToggle)
+        themeIcon = findViewById(R.id.themeIcon)
+        updateThemeIcon()
+
+        themeToggle.setOnClickListener {
+            val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
+            if (isDark) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            }
+            updateThemeIcon()
+        }
+
         viewModel.weeklyUsage.observe(this) { days ->
             val bars = listOf(mondayBar, tuesdayBar, wedBar, thursdayBar, fridayBar, saturdayBar, sundayBar)
             val maxBarHeight = dpToPx(this, 160)
@@ -148,6 +166,11 @@ class MainActivity : AppCompatActivity() {
         analyticsPage.setOnClickListener {
             startActivity(Intent(this, Analytics::class.java))
         }
+    }
+
+    private fun updateThemeIcon() {
+        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
+        themeIcon.setImageResource(if (isDark) R.drawable.ic_sun else R.drawable.ic_moon)
     }
 
     private var bubbleHandler: Handler? = null
