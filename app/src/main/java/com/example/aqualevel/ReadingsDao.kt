@@ -8,15 +8,20 @@ import androidx.room.Update
 
 interface ReadingsDao{
     @Insert
-    fun insert(Readings: Readings)
+    suspend fun insert(readings: Readings)
 
-    @Delete
-    fun delete(Readings: Readings)
-    @Update
-    fun update(Readings: Readings)
-    @Query("DELETE FROM Readings")
-    fun clearAll(Readings: Readings)
+    @Query("SELECT * FROM readings ORDER BY timestamp DESC")
+    fun fetchALL(): LiveData<List<Readings>>
 
-    @Query("SELECT * FROM Readings ORDER BY id ASC")
-    fun fetchALL(): LiveData<MutableList<Readings>>
+    @Query("""
+        SELECT 
+          strftime('%Y-%m-%d', timestamp/1000, 'unixepoch') as day,
+          MIN(level) as minLevel,
+          MAX(level) as maxLevel
+        FROM readings
+        GROUP BY day
+        ORDER BY day DESC
+        LIMIT 7
+    """)
+    fun getLast7DaysUsage(): LiveData<List<DailyUsage>>
 }

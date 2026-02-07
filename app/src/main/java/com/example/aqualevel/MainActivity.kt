@@ -12,12 +12,21 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.work.*
 import com.google.firebase.firestore.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.log
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var mondayBar: View
+    private lateinit var tuesdayBar: View
+    private lateinit var wedBar: View
+    private lateinit var thursdayBar: View
+    private lateinit var fridayBar: View
+    private lateinit var saturdayBar: View
+    private lateinit var sundayBar: View
+
     private lateinit var analyticsPage: FrameLayout
     private lateinit var settings: FrameLayout
 
@@ -89,6 +98,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+        //The worker that checks level hourly
+        val workRequest = PeriodicWorkRequestBuilder<WaterLevelWorker>(
+            1, TimeUnit.HOURS
+        ).build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "WaterLevelHourlyWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
@@ -101,6 +120,44 @@ class MainActivity : AppCompatActivity() {
         percentage = findViewById(R.id.percentage)
         waterLevel = findViewById(R.id.waterLevel)
         tankContainer = findViewById(R.id.tankContainer)
+        mondayBar = findViewById(R.id.mondayBar)
+        tuesdayBar = findViewById(R.id.tuesdayBar)
+        wedBar = findViewById(R.id.wedBar)
+        thursdayBar = findViewById(R.id.thursdayBar)
+        fridayBar = findViewById(R.id.fridayBar)
+        saturdayBar = findViewById(R.id.saturdayBar)
+        sundayBar = findViewById(R.id.sundayBar)
+
+        val viewModel = ViewModelProvider(this)[ReadingViewModel::class.java]
+
+        viewModel.weeklyUsage.observe(this) { days ->
+
+            val bars = listOf(
+                mondayBar, tuesdayBar, wedBar,
+                thursdayBar, fridayBar, saturdayBar, sundayBar
+            )
+
+            val maxBarHeight = dpToPx(this, 160)
+
+            bars.forEach { bar ->
+                val params = bar.layoutParams
+                params.height = dpToPx(this, 8)
+                bar.layoutParams = params
+            }
+
+            days.take(7).forEachIndexed { index, usage ->
+                val used = (usage.maxLevel - usage.minLevel).coerceAtLeast(0.0)
+
+                val normalized = (used / tankVolume).coerceIn(0.0, 1.0)
+
+                val barHeight =
+                    (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(this, 8))
+
+                val params = bars[6 - index].layoutParams
+                params.height = barHeight
+                bars[6 - index].layoutParams = params
+            }
+        }
 
         scheduleBackgroundWorker()
 
