@@ -2,13 +2,17 @@ package com.example.aqualevel
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.*
 import android.util.Log
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
@@ -37,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var percentage: TextView
     private lateinit var waterLevel: FrameLayout
     private lateinit var tankContainer: FrameLayout
+    private lateinit var userNameTextView: TextView
 
     private lateinit var viewModel: ReadingViewModel
 
@@ -102,6 +107,7 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        userNameTextView = findViewById(R.id.userName)
         analyticsPage = findViewById(R.id.analyticsButton)
         settings = findViewById(R.id.settingsButton)
         button = findViewById(R.id.buttonCheck)
@@ -166,6 +172,51 @@ class MainActivity : AppCompatActivity() {
         analyticsPage.setOnClickListener {
             startActivity(Intent(this, Analytics::class.java))
         }
+
+        checkUserPersistentData()
+    }
+
+    private fun checkUserPersistentData() {
+        val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        val savedName = sharedPref.getString("user_name", null)
+
+        if (savedName == null) {
+            showNameInputDialog()
+        } else {
+            userNameTextView.text = savedName
+        }
+    }
+
+    private fun showNameInputDialog() {
+        val inflater = LayoutInflater.from(this)
+        val dialogView = inflater.inflate(R.layout.dialog_user_name, null)
+        
+        val editText = dialogView.findViewById<EditText>(R.id.userNameInput)
+        val saveButton = dialogView.findViewById<Button>(R.id.saveButton)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        saveButton.setOnClickListener {
+            val name = editText.text.toString().trim()
+            if (name.isNotEmpty()) {
+                val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+                with(sharedPref.edit()) {
+                    putString("user_name", name)
+                    apply()
+                }
+                userNameTextView.text = name
+                dialog.dismiss()
+            } else {
+                Toast.makeText(this, "Please enter your name", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        dialog.show()
     }
 
     private fun updateThemeIcon() {
