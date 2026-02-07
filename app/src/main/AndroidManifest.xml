@@ -14,6 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AquaLevel_">
         <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+        <activity
             android:name=".Analytics"
             android:exported="false" />
         <activity

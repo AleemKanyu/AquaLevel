@@ -6,7 +6,6 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.*
-import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -31,12 +30,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var saturdayBar: View
     private lateinit var sundayBar: View
 
-    private lateinit var analyticsPage: FrameLayout
-    private lateinit var settings: FrameLayout
+    private lateinit var analyticsButton: FrameLayout
+    private lateinit var settingsButton: FrameLayout
     private lateinit var themeToggle: FrameLayout
     private lateinit var themeIcon: ImageView
 
-    private lateinit var button: ImageView
+    private lateinit var buttonCheck: ImageView
     private lateinit var capacityValue: TextView
     private lateinit var percentage: TextView
     private lateinit var waterLevel: FrameLayout
@@ -51,18 +50,28 @@ class MainActivity : AppCompatActivity() {
     private val db = FirebaseFirestore.getInstance()
     private val docRef = db.collection("sensorData").document("esp32_01")
 
-    // ---------- CALIBRATION CONSTANTS ----------
-    private val emptyDistance = 130.0
-    private val fullDistance = 20.0
-    private val tankVolume = 1000.0 // Base volume
-    private val displayMultiplier = 2 // Actual capacity is 2000L
+    // ---------- CALIBRATION CONSTANTS (Default) ----------
+    private var emptyDistance = 130.0
+    private var fullDistance = 20.0
+    private var tankVolume = 1000.0
     // ------------------------------------------
 
     override fun onStart() {
         super.onStart()
+        loadCalibrationSettings()
+        setupFirebaseListener()
+        startBubbleAnimation()
+    }
 
+    private fun loadCalibrationSettings() {
+        val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
+        fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
+        tankVolume = sharedPref.getInt("tank_volume", 1000).toDouble()
+    }
+
+    private fun setupFirebaseListener() {
         listener?.remove()
-
         listener = docRef.addSnapshotListener { snapshot, error ->
             if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
 
@@ -74,17 +83,15 @@ class MainActivity : AppCompatActivity() {
 
             value = (safePercent / 100.0) * tankVolume
 
-            capacityValue.text = "${(value * displayMultiplier).toInt()} litres"
+            capacityValue.text = "${value.toInt()} litres"
             percentage.text = "${safePercent.toInt()}%"
 
             val params = waterLevel.layoutParams
             params.height = dpToPx(this, ((280 * safePercent) / 100).toInt())
             waterLevel.layoutParams = params
 
-            // Save reading to local database for Analytics
             viewModel.addReading(Readings(level = distance, timestamp = System.currentTimeMillis()))
         }
-        startBubbleAnimation()
     }
 
     override fun onStop() {
@@ -108,13 +115,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         userNameTextView = findViewById(R.id.userName)
-        analyticsPage = findViewById(R.id.analyticsButton)
-        settings = findViewById(R.id.settingsButton)
-        button = findViewById(R.id.buttonCheck)
+        analyticsButton = findViewById(R.id.analyticsButton)
+        settingsButton = findViewById(R.id.settingsButton)
+        buttonCheck = findViewById(R.id.buttonCheck)
         capacityValue = findViewById(R.id.capacityValue)
         percentage = findViewById(R.id.percentage)
         waterLevel = findViewById(R.id.waterLevel)
         tankContainer = findViewById(R.id.tankContainer)
+        
         mondayBar = findViewById(R.id.mondayBar)
         tuesdayBar = findViewById(R.id.tuesdayBar)
         wedBar = findViewById(R.id.wedBar)
@@ -123,18 +131,13 @@ class MainActivity : AppCompatActivity() {
         saturdayBar = findViewById(R.id.saturdayBar)
         sundayBar = findViewById(R.id.sundayBar)
 
-        // Theme Toggle Setup
         themeToggle = findViewById(R.id.themeToggle)
         themeIcon = findViewById(R.id.themeIcon)
         updateThemeIcon()
 
         themeToggle.setOnClickListener {
             val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
-            if (isDark) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            }
+            AppCompatDelegate.setDefaultNightMode(if (isDark) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES)
             updateThemeIcon()
         }
 
@@ -165,32 +168,51 @@ class MainActivity : AppCompatActivity() {
 
         scheduleBackgroundWorker()
 
-        button.setOnClickListener {
+        buttonCheck.setOnClickListener {
+            it.animate().rotationBy(360f).setDuration(500).start()
             db.collection("sensorCommands").document("esp32_01").update("refresh", true)
         }
 
-        analyticsPage.setOnClickListener {
-            startActivity(Intent(this, Analytics::class.java))
+        analyticsButton.setOnClickListener {
+            applyClickAnimation(it) {
+                startActivity(Intent(this, Analytics::class.java))
+            }
+        }
+
+        settingsButton.setOnClickListener {
+            applyClickAnimation(it) {
+                startActivity(Intent(this, SettingsActivity::class.java))
+            }
         }
 
         checkUserPersistentData()
     }
 
+    private fun applyClickAnimation(view: View, onAnimationEnd: () -> Unit) {
+        view.animate()
+            .scaleX(0.85f)
+            .scaleY(0.85f)
+            .setDuration(100)
+            .withEndAction {
+                view.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(100)
+                    .withEndAction { onAnimationEnd() }
+                    .start()
+            }
+            .start()
+    }
+
     private fun checkUserPersistentData() {
         val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
         val savedName = sharedPref.getString("user_name", null)
-
-        if (savedName == null) {
-            showNameInputDialog()
-        } else {
-            userNameTextView.text = savedName
-        }
+        if (savedName == null) showNameInputDialog() else userNameTextView.text = savedName
     }
 
     private fun showNameInputDialog() {
         val inflater = LayoutInflater.from(this)
         val dialogView = inflater.inflate(R.layout.dialog_user_name, null)
-        
         val editText = dialogView.findViewById<EditText>(R.id.userNameInput)
         val saveButton = dialogView.findViewById<Button>(R.id.saveButton)
 
@@ -198,24 +220,19 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogView)
             .setCancelable(false)
             .create()
-
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         saveButton.setOnClickListener {
             val name = editText.text.toString().trim()
             if (name.isNotEmpty()) {
-                val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
-                with(sharedPref.edit()) {
-                    putString("user_name", name)
-                    apply()
-                }
+                getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE).edit()
+                    .putString("user_name", name).apply()
                 userNameTextView.text = name
                 dialog.dismiss()
             } else {
                 Toast.makeText(this, "Please enter your name", Toast.LENGTH_SHORT).show()
             }
         }
-
         dialog.show()
     }
 
@@ -247,28 +264,23 @@ class MainActivity : AppCompatActivity() {
         WorkManager.getInstance(this).enqueueUniquePeriodicWork("water_level_monitor", ExistingPeriodicWorkPolicy.KEEP, workRequest)
     }
 
-    fun dpToPx(context: Context, dp: Int): Int {
-        return (dp * context.resources.displayMetrics.density).toInt()
-    }
+    fun dpToPx(context: Context, dp: Int): Int = (dp * context.resources.displayMetrics.density).toInt()
 
     fun spawnBubble(context: Context, waterLevel: FrameLayout) {
         val bubbleSizePx = dpToPx(context, (6..12).random())
         val bubble = View(context)
         val maxLeft = waterLevel.width - bubbleSizePx
         val leftMargin = if (maxLeft > 0) (0..maxLeft).random() else 0
-
         bubble.layoutParams = FrameLayout.LayoutParams(bubbleSizePx, bubbleSizePx).apply {
             gravity = Gravity.BOTTOM
             this.leftMargin = leftMargin
             bottomMargin = 10
         }
-
         bubble.background = GradientDrawable().apply {
             shape = GradientDrawable.OVAL
             setColor(0x66FFFFFF)
         }
         waterLevel.addView(bubble)
-
         bubble.animate()
             .translationY(-waterLevel.height.toFloat())
             .alpha(0f)
