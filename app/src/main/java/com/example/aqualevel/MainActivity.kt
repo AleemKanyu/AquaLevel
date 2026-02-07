@@ -16,7 +16,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.work.*
 import com.google.firebase.firestore.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.log
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mondayBar: View
@@ -36,6 +35,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var waterLevel: FrameLayout
     private lateinit var tankContainer: FrameLayout
 
+    private lateinit var viewModel: ReadingViewModel
+
     private var value: Double = 0.0
     private var listener: ListenerRegistration? = null
 
@@ -45,11 +46,9 @@ class MainActivity : AppCompatActivity() {
     // ---------- CALIBRATION CONSTANTS ----------
     private val emptyDistance = 130.0
     private val fullDistance = 20.0
-    private val tankVolume = 1000.0
+    private val tankVolume = 1000.0 // Base volume
+    private val displayMultiplier = 2 // Actual capacity is 2000L
     // ------------------------------------------
-
-    private var bubbleHandler: Handler? = null
-    private var bubbleRunnable: Runnable? = null
 
     override fun onStart() {
         super.onStart()
@@ -60,29 +59,22 @@ class MainActivity : AppCompatActivity() {
             if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
 
             val distance = snapshot.getDouble("distance") ?: return@addSnapshotListener
-            val time1 = snapshot.getDouble("timestamp") ?: return@addSnapshotListener
-
-
-            val clampedDistance =
-                distance.coerceIn(fullDistance, emptyDistance)
-
-            val percent =
-                ((emptyDistance - clampedDistance) /
-                        (emptyDistance - fullDistance)) * 100.0
-
+            
+            val clampedDistance = distance.coerceIn(fullDistance, emptyDistance)
+            val percent = ((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0
             val safePercent = percent.coerceIn(0.0, 100.0)
 
             value = (safePercent / 100.0) * tankVolume
 
-            capacityValue.text = "${value.toInt() * 2} litres"
+            capacityValue.text = "${(value * displayMultiplier).toInt()} litres"
             percentage.text = "${safePercent.toInt()}%"
 
             val params = waterLevel.layoutParams
-            params.height = dpToPx(
-                this,
-                ((280 * safePercent) / 100).toInt()
-            )
+            params.height = dpToPx(this, ((280 * safePercent) / 100).toInt())
             waterLevel.layoutParams = params
+
+            // Save reading to local database for Analytics
+            viewModel.addReading(Readings(level = distance, timestamp = System.currentTimeMillis()))
         }
         startBubbleAnimation()
     }
@@ -98,23 +90,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        //The worker that checks level hourly
-        val workRequest = PeriodicWorkRequestBuilder<WaterLevelWorker>(
-            1, TimeUnit.HOURS
-        ).build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "WaterLevelHourlyWorker",
-            ExistingPeriodicWorkPolicy.KEEP,
-            workRequest
-        )
+        viewModel = ViewModelProvider(this)[ReadingViewModel::class.java]
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
             insets
         }
+
         analyticsPage = findViewById(R.id.analyticsButton)
-        settings=findViewById(R.id.settingsButton)
+        settings = findViewById(R.id.settingsButton)
         button = findViewById(R.id.buttonCheck)
         capacityValue = findViewById(R.id.capacityValue)
         percentage = findViewById(R.id.percentage)
@@ -128,16 +114,10 @@ class MainActivity : AppCompatActivity() {
         saturdayBar = findViewById(R.id.saturdayBar)
         sundayBar = findViewById(R.id.sundayBar)
 
-        val viewModel = ViewModelProvider(this)[ReadingViewModel::class.java]
-
         viewModel.weeklyUsage.observe(this) { days ->
-
-            val bars = listOf(
-                mondayBar, tuesdayBar, wedBar,
-                thursdayBar, fridayBar, saturdayBar, sundayBar
-            )
-
+            val bars = listOf(mondayBar, tuesdayBar, wedBar, thursdayBar, fridayBar, saturdayBar, sundayBar)
             val maxBarHeight = dpToPx(this, 160)
+            val totalDistRange = emptyDistance - fullDistance
 
             bars.forEach { bar ->
                 val params = bar.layoutParams
@@ -146,41 +126,32 @@ class MainActivity : AppCompatActivity() {
             }
 
             days.take(7).forEachIndexed { index, usage ->
-                val used = (usage.maxLevel - usage.minLevel).coerceAtLeast(0.0)
+                val usedDist = (usage.maxLevel - usage.minLevel).coerceAtLeast(0.0)
+                val normalized = (usedDist / totalDistRange).coerceIn(0.0, 1.0)
+                val barHeight = (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(this, 8))
 
-                val normalized = (used / tankVolume).coerceIn(0.0, 1.0)
-
-                val barHeight =
-                    (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(this, 8))
-
-                val params = bars[6 - index].layoutParams
-                params.height = barHeight
-                bars[6 - index].layoutParams = params
+                val barIndex = 6 - index
+                if (barIndex in bars.indices) {
+                    val params = bars[barIndex].layoutParams
+                    params.height = barHeight
+                    bars[barIndex].layoutParams = params
+                }
             }
         }
 
         scheduleBackgroundWorker()
 
         button.setOnClickListener {
-            db.collection("sensorCommands")
-                .document("esp32_01")
-                .update("refresh", true)
-                .addOnSuccessListener {
-                    Log.d("MANUAL", "Refresh flag set")
-                }
-                .addOnFailureListener {
-                    Log.e("MANUAL", "Failed to set refresh", it)
-                }
-
+            db.collection("sensorCommands").document("esp32_01").update("refresh", true)
         }
-        analyticsPage.setOnClickListener {
-            val intent= Intent(this, Analytics::class.java)
-            startActivity(intent)
 
+        analyticsPage.setOnClickListener {
+            startActivity(Intent(this, Analytics::class.java))
         }
     }
 
-    // ---------------- BUBBLE ANIMATION ----------------
+    private var bubbleHandler: Handler? = null
+    private var bubbleRunnable: Runnable? = null
 
     private fun startBubbleAnimation() {
         bubbleHandler = Handler(mainLooper)
@@ -195,66 +166,40 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopBubbleAnimation() {
         bubbleHandler?.removeCallbacksAndMessages(null)
-        bubbleHandler = null
-        bubbleRunnable = null
     }
-
-    // -------------------------------------------------
 
     private fun scheduleBackgroundWorker() {
-        val workRequest =
-            PeriodicWorkRequestBuilder<WaterLevelWorker>(1, TimeUnit.MINUTES)
-                .build()
-
-        WorkManager.getInstance(this)
-            .enqueueUniquePeriodicWork(
-                "water_level_monitor",
-                ExistingPeriodicWorkPolicy.KEEP,
-                workRequest
-            )
+        val workRequest = PeriodicWorkRequestBuilder<WaterLevelWorker>(15, TimeUnit.MINUTES).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork("water_level_monitor", ExistingPeriodicWorkPolicy.KEEP, workRequest)
     }
-
 
     fun dpToPx(context: Context, dp: Int): Int {
         return (dp * context.resources.displayMetrics.density).toInt()
     }
 
-    fun spawnBubble(
-        context: Context,
-        waterLevel: FrameLayout
-    ) {
-        val bubbleSizeDp = (6..12).random()
-        val bubbleSizePx = dpToPx(context, bubbleSizeDp)
-
+    fun spawnBubble(context: Context, waterLevel: FrameLayout) {
+        val bubbleSizePx = dpToPx(context, (6..12).random())
         val bubble = View(context)
-
         val maxLeft = waterLevel.width - bubbleSizePx
         val leftMargin = if (maxLeft > 0) (0..maxLeft).random() else 0
 
-        bubble.layoutParams = FrameLayout.LayoutParams(
-            bubbleSizePx,
-            bubbleSizePx
-        ).apply {
+        bubble.layoutParams = FrameLayout.LayoutParams(bubbleSizePx, bubbleSizePx).apply {
             gravity = Gravity.BOTTOM
             this.leftMargin = leftMargin
             bottomMargin = 10
         }
 
-        val drawable = GradientDrawable().apply {
+        bubble.background = GradientDrawable().apply {
             shape = GradientDrawable.OVAL
             setColor(0x66FFFFFF)
         }
-
-        bubble.background = drawable
         waterLevel.addView(bubble)
 
         bubble.animate()
             .translationY(-waterLevel.height.toFloat())
             .alpha(0f)
             .setDuration((3000..6000).random().toLong())
-            .withEndAction {
-                waterLevel.removeView(bubble)
-            }
+            .withEndAction { waterLevel.removeView(bubble) }
             .start()
     }
 }

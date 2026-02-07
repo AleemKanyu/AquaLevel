@@ -1,17 +1,18 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.google.gms.google.services)
 }
 
 android {
     namespace = "com.example.aqualevel"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.aqualevel_"
-        minSdk = 24
-        targetSdk = 36
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -38,12 +39,13 @@ android {
     }
 }
 
+
 dependencies {
-    val room_version = "2.8.4"
+    val room_version = "2.6.1"
 
     implementation("androidx.room:room-runtime:$room_version")
-
-
+    implementation("androidx.room:room-ktx:$room_version")
+    kapt("androidx.room:room-compiler:$room_version")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
