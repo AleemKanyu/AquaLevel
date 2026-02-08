@@ -89,6 +89,13 @@ class MainActivity : AppCompatActivity() {
         startBubbleAnimation()
     }
 
+    override fun onStop() {
+        super.onStop()
+        listener?.remove()
+        listener = null
+        stopBubbleAnimation()
+    }
+
     override fun onResume() {
         super.onResume()
         updateNotificationCardVisibility()
@@ -104,18 +111,32 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleNotificationButtonClick() {
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
-            notificationHelper.sendNotification("Test Notification", "Your notifications are working perfectly!", 999)
-            Toast.makeText(this, "Test notification sent", Toast.LENGTH_SHORT).show()
+            notificationHelper.sendNotification("Manual Test", "Notifications are currently enabled!", 999)
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else {
-                // For Android 8 to 12, take user to settings
-                val intent = Intent().apply {
-                    action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
-                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                // Compatible redirection for Android 7 to 12
+                val intent = Intent()
+                when {
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
+                        intent.action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                        intent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    }
+                    else -> {
+                        // Android 7 (Nougat)
+                        intent.action = "android.settings.APP_NOTIFICATION_SETTINGS"
+                        intent.putExtra("app_package", packageName)
+                        intent.putExtra("app_uid", applicationInfo.uid)
+                    }
                 }
-                startActivity(intent)
+                try {
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    fallbackIntent.data = Uri.fromParts("package", packageName, null)
+                    startActivity(fallbackIntent)
+                }
                 Toast.makeText(this, "Please enable notifications in settings", Toast.LENGTH_LONG).show()
             }
         }
@@ -169,13 +190,6 @@ class MainActivity : AppCompatActivity() {
         else if (percent in 31..99) {
             sharedPref.edit().putInt("last_notified_level", -1).apply()
         }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        listener?.remove()
-        listener = null
-        stopBubbleAnimation()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

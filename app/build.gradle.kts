@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.aqualevel_"
-        minSdk = 26
+        minSdk = 24 // Updated from 26 to 24 for Android 7 support
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -33,6 +33,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -60,4 +61,5 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }

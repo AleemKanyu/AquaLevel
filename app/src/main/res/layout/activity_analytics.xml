@@ -80,19 +80,20 @@
     </LinearLayout>
 
     <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="414dp"
+        android:layout_height="match_parent"
+        android:layout_marginTop="70dp"
         app:layout_constraintBottom_toTopOf="@+id/view2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/topBar"
-        android:layout_marginTop="10dp">
+        app:layout_constraintTop_toBottomOf="@+id/topBar">
 
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:layout_marginHorizontal="15dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -103,14 +104,14 @@
                 android:paddingBottom="10dp">
 
                 <FrameLayout
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:stateListAnimator="@animator/card_press_anim"
                     android:layout_width="wrap_content"
                     android:layout_height="160dp"
                     android:layout_margin="8dp"
                     android:background="@drawable/bg_purple_card"
+                    android:clickable="true"
                     android:elevation="2dp"
+                    android:focusable="true"
+                    android:stateListAnimator="@animator/card_press_anim"
                     app:cardCornerRadius="32dp">
 
                     <LinearLayout
@@ -176,14 +177,14 @@
                 </FrameLayout>
 
                 <FrameLayout
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:stateListAnimator="@animator/card_press_anim"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_margin="8dp"
                     android:background="@drawable/bg_teal_card"
+                    android:clickable="true"
                     android:elevation="2dp"
+                    android:focusable="true"
+                    android:stateListAnimator="@animator/card_press_anim"
                     app:cardCornerRadius="32dp">
 
                     <LinearLayout
@@ -261,14 +262,14 @@
                 android:paddingBottom="10dp">
 
                 <FrameLayout
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:stateListAnimator="@animator/card_press_anim"
                     android:layout_width="wrap_content"
                     android:layout_height="160dp"
                     android:layout_margin="8dp"
                     android:background="@drawable/bg_lime_card"
+                    android:clickable="true"
                     android:elevation="2dp"
+                    android:focusable="true"
+                    android:stateListAnimator="@animator/card_press_anim"
                     app:cardCornerRadius="32dp">
 
                     <LinearLayout
@@ -336,14 +337,14 @@
 
 
                 <FrameLayout
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:stateListAnimator="@animator/card_press_anim"
                     android:layout_width="170dp"
                     android:layout_height="160dp"
                     android:layout_margin="8dp"
                     android:background="@drawable/bg_blue_card"
+                    android:clickable="true"
                     android:elevation="2dp"
+                    android:focusable="true"
+                    android:stateListAnimator="@animator/card_press_anim"
                     app:cardCornerRadius="32dp">
 
 
@@ -418,15 +419,17 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginHorizontal="20dp"
-                android:paddingBottom="30dp"
                 android:background="@drawable/bg_card"
-                android:backgroundTint="?colorSurface">
+                android:backgroundTint="?colorSurface"
+                android:paddingBottom="30dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical"
-                    android:paddingHorizontal="16dp">
+                    android:paddingHorizontal="16dp"
+                    android:layout_marginHorizontal="10dp"
+                    >
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -469,6 +472,7 @@
                 </LinearLayout>
 
             </FrameLayout>
+
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="120dp" />

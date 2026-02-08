@@ -27,6 +27,7 @@ class Analytics : AppCompatActivity() {
     private lateinit var dailyUsageText: TextView
     private lateinit var daysLeftText: TextView
     private lateinit var hourlyAvgText: TextView
+    private lateinit var userNameTextView: TextView
     private lateinit var hourlyUsageGraph: UsageGraphView
 
     // ---------- CALIBRATION CONSTANTS ----------
@@ -52,6 +53,10 @@ class Analytics : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        userNameTextView = findViewById(R.id.userName)
+        val savedName = sharedPref.getString("user_name", "User")
+        userNameTextView.text = savedName
 
         homeButton = findViewById(R.id.homeButton)
         homeButton.setOnClickListener {
