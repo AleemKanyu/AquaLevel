@@ -92,6 +92,65 @@
             android:orientation="vertical"
             android:padding="10dp">
 
+            <!-- Notification Permission Card -->
+            <LinearLayout
+                android:id="@+id/notificationPermissionCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@drawable/bg_card"
+                android:backgroundTint="#FFF3E0"
+                android:layout_marginHorizontal="20dp"
+                android:padding="16dp"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_sync"
+                    app:tint="#FB8C00" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginHorizontal="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Notifications Disabled"
+                        android:textColor="#E65100"
+                        android:textStyle="bold"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tap to enable water level alerts"
+                        android:textColor="#EF6C00"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnEnableNotifications"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Enable"
+                    android:textSize="12sp"
+                    android:paddingHorizontal="12dp"
+                    android:backgroundTint="#FB8C00"
+                    android:textColor="@android:color/white"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="10dp" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -554,7 +613,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:fontFamily="monospace"
-                        android:text="DAYS LEFT"
+                        android:text="DAILY AVG"
                         android:textAlignment="textStart"
                         android:textColor="?android:textColorPrimary"
                         android:textSize="12dp"
@@ -562,9 +621,10 @@
 
 
                     <TextView
+                        android:id="@+id/dailyAvgValue"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="~28 Days"
+                        android:text="0 L"
                         android:textAlignment="center"
                         android:textColor="?android:textColorPrimary"
                         android:textSize="20dp"

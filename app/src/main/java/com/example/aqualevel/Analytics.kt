@@ -1,5 +1,6 @@
 package com.example.aqualevel
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -15,37 +16,36 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
 import java.time.Instant
 import java.time.ZoneId
+import java.util.*
 
 class Analytics : AppCompatActivity() {
 
     private lateinit var homeButton: FrameLayout
-
-    private lateinit var mondayBar: View
-    private lateinit var tuesdayBar: View
-    private lateinit var wedBar: View
-    private lateinit var thursdayBar: View
-    private lateinit var fridayBar: View
-    private lateinit var saturdayBar: View
-    private lateinit var sundayBar: View
+    private lateinit var settingsButton: FrameLayout
 
     private lateinit var percentageText: TextView
     private lateinit var dailyUsageText: TextView
     private lateinit var daysLeftText: TextView
+    private lateinit var hourlyAvgText: TextView
+    private lateinit var hourlyUsageGraph: UsageGraphView
 
-    private lateinit var themeToggle: FrameLayout
-    private lateinit var themeIcon: ImageView
-
-    // ---------- CALIBRATION CONSTANTS (Matching MainActivity) ----------
-    private val emptyDistance = 130.0
-    private val fullDistance = 20.0
-    private val tankVolume = 1000.0
-    private val displayMultiplier = 2
-    // ------------------------------------------------------------------
+    // ---------- CALIBRATION CONSTANTS ----------
+    private var emptyDistance = 130.0
+    private var fullDistance = 20.0
+    private var tankVolume = 2000.0 // Corrected to 2000L
+    private val displayMultiplier = 1 // Multiplier set to 1 since tankVolume is now 2000L
+    // ------------------------------------------
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        val isDarkMode = sharedPref.getBoolean("is_dark_mode", false)
+        AppCompatDelegate.setDefaultNightMode(if (isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_analytics)
+
+        loadCalibrationSettings()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -58,17 +58,17 @@ class Analytics : AppCompatActivity() {
             finish()
         }
 
-        mondayBar = findViewById(R.id.mondayBar)
-        tuesdayBar = findViewById(R.id.tuesdayBar)
-        wedBar = findViewById(R.id.wedBar)
-        thursdayBar = findViewById(R.id.thursdayBar)
-        fridayBar = findViewById(R.id.fridayBar)
-        saturdayBar = findViewById(R.id.saturdayBar)
-        sundayBar = findViewById(R.id.sundayBar)
+        settingsButton = findViewById(R.id.settingsButton)
+        settingsButton.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            finish()
+        }
 
         percentageText = findViewById(R.id.percentage)
         dailyUsageText = findViewById(R.id.dailyUsageValue)
         daysLeftText = findViewById(R.id.daysLeftValue)
+        hourlyAvgText = findViewById(R.id.hourlyAvgValue)
+        hourlyUsageGraph = findViewById(R.id.hourlyUsageGraph)
 
         // Theme Toggle Setup
         themeToggle = findViewById(R.id.themeToggle)
@@ -76,66 +76,33 @@ class Analytics : AppCompatActivity() {
         updateThemeIcon()
 
         themeToggle.setOnClickListener {
-            val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
-            if (isDark) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            }
-            updateThemeIcon()
+            val isDark = sharedPref.getBoolean("is_dark_mode", false)
+            sharedPref.edit().putBoolean("is_dark_mode", !isDark).apply()
+            recreate()
         }
 
         val viewModel = ViewModelProvider(this)[ReadingViewModel::class.java]
 
-        // -------- Weekly bars --------
-        viewModel.weeklyUsage.observe(this) { days ->
-            Log.d("Analytics", "Weekly usage updated: ${days.size} days")
-            val bars = listOf(
-                mondayBar, tuesdayBar, wedBar,
-                thursdayBar, fridayBar, saturdayBar, sundayBar
-            )
-
-            val maxBarHeight = dpToPx(160)
-
-            bars.forEach { bar ->
-                val params = bar.layoutParams
-                params.height = dpToPx(8)
-                bar.layoutParams = params
-            }
-
-            days.take(7).forEachIndexed { index, usage ->
-                val usedDist = (usage.maxLevel - usage.minLevel).coerceAtLeast(0.0)
-                val totalDistRange = emptyDistance - fullDistance
-                val normalized = (usedDist / totalDistRange).coerceIn(0.0, 1.0)
-                
-                val barHeight = (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(8))
-
-                val barIndex = 6 - index
-                if (barIndex in bars.indices) {
-                    val params = bars[barIndex].layoutParams
-                    params.height = barHeight
-                    bars[barIndex].layoutParams = params
-                }
-            }
-        }
-
-        // -------- Top cards --------
+        // -------- Top cards and Hourly Graph --------
         viewModel.allReadings.observe(this) { readings ->
             Log.d("Analytics", "All readings updated: ${readings.size} entries")
             if (readings.isEmpty()) return@observe
 
+            // Current Level
             val latest = readings.first()
             val clampedLatest = latest.level.coerceIn(fullDistance, emptyDistance)
             val currentPercent = (((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * 100).toInt()
             percentageText.text = currentPercent.toString()
 
-            val today = readings.filter {
+            // Today's Readings
+            val todayReadings = readings.filter {
                 isSameDay(it.timestamp, System.currentTimeMillis())
             }
 
-            if (today.size >= 2) {
-                val minDist = today.minOf { it.level }
-                val maxDist = today.maxOf { it.level }
+            // Daily Usage
+            if (todayReadings.size >= 2) {
+                val minDist = todayReadings.minOf { it.level }
+                val maxDist = todayReadings.maxOf { it.level }
                 
                 val usedDist = (maxDist - minDist).coerceAtLeast(0.0)
                 val totalDistRange = emptyDistance - fullDistance
@@ -146,7 +113,11 @@ class Analytics : AppCompatActivity() {
                 dailyUsageText.text = "0"
             }
 
+            // Days Left and Hourly Average
             val avgDailyUsageVolume = calculateAverageDailyUsage(readings)
+            val hourlyAvg = if (avgDailyUsageVolume > 0) avgDailyUsageVolume / 24 else 0.0
+            hourlyAvgText.text = hourlyAvg.toInt().toString()
+
             if (avgDailyUsageVolume > 0) {
                 val currentVolume = ((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * tankVolume * displayMultiplier
                 val daysLeft = (currentVolume / avgDailyUsageVolume).toInt()
@@ -154,16 +125,53 @@ class Analytics : AppCompatActivity() {
             } else {
                 daysLeftText.text = "--"
             }
+
+            // Hourly Usage Graph
+            updateHourlyGraph(todayReadings)
         }
     }
 
-    private fun updateThemeIcon() {
-        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
-        themeIcon.setImageResource(if (isDark) R.drawable.ic_sun else R.drawable.ic_moon)
+    private fun updateHourlyGraph(todayReadings: List<Readings>) {
+        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        val hourlyData = FloatArray(24) { 0f }
+        
+        val totalDistRange = emptyDistance - fullDistance
+        if (totalDistRange <= 0) return
+
+        val groupedByHour = todayReadings.groupBy {
+            Instant.ofEpochMilli(it.timestamp)
+                .atZone(ZoneId.systemDefault())
+                .hour
+        }
+
+        for (hour in 0..currentHour) {
+            val readingsInHour = groupedByHour[hour]
+            if (readingsInHour != null && readingsInHour.size >= 2) {
+                val minDist = readingsInHour.minOf { it.level }
+                val maxDist = readingsInHour.maxOf { it.level }
+                val usedDist = (maxDist - minDist).coerceAtLeast(0.0)
+                val usedVolume = (usedDist / totalDistRange) * tankVolume * displayMultiplier
+                hourlyData[hour] = usedVolume.toFloat()
+            }
+        }
+        
+        hourlyUsageGraph.setData(hourlyData.toList())
     }
 
-    private fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
+    private fun loadCalibrationSettings() {
+        val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
+        fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
+        tankVolume = sharedPref.getInt("tank_volume", 2000).toDouble()
+    }
+
+    private lateinit var themeToggle: FrameLayout
+    private lateinit var themeIcon: ImageView
+
+    private fun updateThemeIcon() {
+        val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        val isDark = sharedPref.getBoolean("is_dark_mode", false)
+        themeIcon.setImageResource(if (isDark) R.drawable.ic_sun else R.drawable.ic_moon)
     }
 
     private fun isSameDay(t1: Long, t2: Long): Boolean {

@@ -1,24 +1,34 @@
 package com.example.aqualevel
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.*
+import android.provider.Settings
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.work.*
 import com.google.firebase.firestore.*
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -37,12 +47,18 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var buttonCheck: ImageView
     private lateinit var capacityValue: TextView
+    private lateinit var dailyAvgValue: TextView
     private lateinit var percentage: TextView
     private lateinit var waterLevel: FrameLayout
     private lateinit var tankContainer: FrameLayout
     private lateinit var userNameTextView: TextView
 
+    private lateinit var notificationPermissionCard: View
+    private lateinit var btnEnableNotifications: Button
+
     private lateinit var viewModel: ReadingViewModel
+    private lateinit var sharedPref: SharedPreferences
+    private lateinit var notificationHelper: NotificationHelper
 
     private var value: Double = 0.0
     private var listener: ListenerRegistration? = null
@@ -53,8 +69,18 @@ class MainActivity : AppCompatActivity() {
     // ---------- CALIBRATION CONSTANTS (Default) ----------
     private var emptyDistance = 130.0
     private var fullDistance = 20.0
-    private var tankVolume = 1000.0
+    private var tankVolume = 2000.0 // Total volume updated to 2000L
     // ------------------------------------------
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            Toast.makeText(this, "Notifications enabled.", Toast.LENGTH_SHORT).show()
+            notificationHelper.sendNotification("Notifications Enabled", "You will now receive water level alerts.", 999)
+        }
+        updateNotificationCardVisibility()
+    }
 
     override fun onStart() {
         super.onStart()
@@ -63,11 +89,42 @@ class MainActivity : AppCompatActivity() {
         startBubbleAnimation()
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateNotificationCardVisibility()
+    }
+
+    private fun updateNotificationCardVisibility() {
+        if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            notificationPermissionCard.visibility = View.GONE
+        } else {
+            notificationPermissionCard.visibility = View.VISIBLE
+        }
+    }
+
+    private fun handleNotificationButtonClick() {
+        if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            notificationHelper.sendNotification("Test Notification", "Your notifications are working perfectly!", 999)
+            Toast.makeText(this, "Test notification sent", Toast.LENGTH_SHORT).show()
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                // For Android 8 to 12, take user to settings
+                val intent = Intent().apply {
+                    action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                }
+                startActivity(intent)
+                Toast.makeText(this, "Please enable notifications in settings", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun loadCalibrationSettings() {
-        val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
         emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
         fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
-        tankVolume = sharedPref.getInt("tank_volume", 1000).toDouble()
+        tankVolume = sharedPref.getInt("tank_volume", 2000).toDouble()
     }
 
     private fun setupFirebaseListener() {
@@ -90,7 +147,27 @@ class MainActivity : AppCompatActivity() {
             params.height = dpToPx(this, ((280 * safePercent) / 100).toInt())
             waterLevel.layoutParams = params
 
+            checkAndSendNotifications(safePercent.toInt())
             viewModel.addReading(Readings(level = distance, timestamp = System.currentTimeMillis()))
+        }
+    }
+
+    private fun checkAndSendNotifications(percent: Int) {
+        val lastNotified = sharedPref.getInt("last_notified_level", -1)
+        
+        // Notify at 100%
+        if (percent >= 100 && lastNotified != 100) {
+            notificationHelper.sendNotification("Tank Full!", "Your water tank is now 100% full.", 1001)
+            sharedPref.edit().putInt("last_notified_level", 100).apply()
+        } 
+        // Notify at or below 30%
+        else if (percent <= 30 && lastNotified != 30) {
+            notificationHelper.sendNotification("Low Water Level", "Warning: Tank level is at ${percent}%.", 1002)
+            sharedPref.edit().putInt("last_notified_level", 30).apply()
+        }
+        // Reset state if level is between 31 and 99
+        else if (percent in 31..99) {
+            sharedPref.edit().putInt("last_notified_level", -1).apply()
         }
     }
 
@@ -102,6 +179,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        notificationHelper = NotificationHelper(this)
+        applyTheme()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
@@ -119,10 +199,14 @@ class MainActivity : AppCompatActivity() {
         settingsButton = findViewById(R.id.settingsButton)
         buttonCheck = findViewById(R.id.buttonCheck)
         capacityValue = findViewById(R.id.capacityValue)
+        dailyAvgValue = findViewById(R.id.dailyAvgValue)
         percentage = findViewById(R.id.percentage)
         waterLevel = findViewById(R.id.waterLevel)
         tankContainer = findViewById(R.id.tankContainer)
         
+        notificationPermissionCard = findViewById(R.id.notificationPermissionCard)
+        btnEnableNotifications = findViewById(R.id.btnEnableNotifications)
+
         mondayBar = findViewById(R.id.mondayBar)
         tuesdayBar = findViewById(R.id.tuesdayBar)
         wedBar = findViewById(R.id.wedBar)
@@ -136,9 +220,13 @@ class MainActivity : AppCompatActivity() {
         updateThemeIcon()
 
         themeToggle.setOnClickListener {
-            val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
-            AppCompatDelegate.setDefaultNightMode(if (isDark) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES)
-            updateThemeIcon()
+            val isDark = sharedPref.getBoolean("is_dark_mode", false)
+            sharedPref.edit().putBoolean("is_dark_mode", !isDark).apply()
+            recreate()
+        }
+
+        btnEnableNotifications.setOnClickListener {
+            handleNotificationButtonClick()
         }
 
         viewModel.weeklyUsage.observe(this) { days ->
@@ -146,14 +234,40 @@ class MainActivity : AppCompatActivity() {
             val maxBarHeight = dpToPx(this, 160)
             val totalDistRange = emptyDistance - fullDistance
 
-            bars.forEach { bar ->
+            // Get current day of week (0-6 starting Monday)
+            val calendar = Calendar.getInstance()
+            val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+            val currentDayIndex = when (dayOfWeek) {
+                Calendar.MONDAY -> 0
+                Calendar.TUESDAY -> 1
+                Calendar.WEDNESDAY -> 2
+                Calendar.THURSDAY -> 3
+                Calendar.FRIDAY -> 4
+                Calendar.SATURDAY -> 5
+                Calendar.SUNDAY -> 6
+                else -> 0
+            }
+
+            bars.forEachIndexed { index, bar ->
                 val params = bar.layoutParams
                 params.height = dpToPx(this, 8)
                 bar.layoutParams = params
+                
+                // Set default color for other days
+                bar.backgroundTintList = ContextCompat.getColorStateList(this, if (index == currentDayIndex) R.color.blue_dark else R.color.blue_light)
             }
+
+            var totalWeeklyUsedDist = 0.0
+            var daysWithData = 0
 
             days.take(7).forEachIndexed { index, usage ->
                 val usedDist = (usage.maxLevel - usage.minLevel).coerceAtLeast(0.0)
+                
+                if (usedDist > 0) {
+                    totalWeeklyUsedDist += usedDist
+                    daysWithData++
+                }
+
                 val normalized = (usedDist / totalDistRange).coerceIn(0.0, 1.0)
                 val barHeight = (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(this, 8))
 
@@ -163,6 +277,15 @@ class MainActivity : AppCompatActivity() {
                     params.height = barHeight
                     bars[barIndex].layoutParams = params
                 }
+            }
+
+            // Calculate Daily Average
+            if (daysWithData > 0) {
+                val avgDist = totalWeeklyUsedDist / daysWithData
+                val avgVolume = (avgDist / totalDistRange) * tankVolume
+                dailyAvgValue.text = "${avgVolume.toInt()} L"
+            } else {
+                dailyAvgValue.text = "0 L"
             }
         }
 
@@ -188,6 +311,11 @@ class MainActivity : AppCompatActivity() {
         checkUserPersistentData()
     }
 
+    private fun applyTheme() {
+        val isDark = sharedPref.getBoolean("is_dark_mode", false)
+        AppCompatDelegate.setDefaultNightMode(if (isDark) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
+    }
+
     private fun applyClickAnimation(view: View, onAnimationEnd: () -> Unit) {
         view.animate()
             .scaleX(0.85f)
@@ -205,7 +333,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkUserPersistentData() {
-        val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
         val savedName = sharedPref.getString("user_name", null)
         if (savedName == null) showNameInputDialog() else userNameTextView.text = savedName
     }
@@ -225,8 +352,7 @@ class MainActivity : AppCompatActivity() {
         saveButton.setOnClickListener {
             val name = editText.text.toString().trim()
             if (name.isNotEmpty()) {
-                getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE).edit()
-                    .putString("user_name", name).apply()
+                sharedPref.edit().putString("user_name", name).apply()
                 userNameTextView.text = name
                 dialog.dismiss()
             } else {
@@ -237,7 +363,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateThemeIcon() {
-        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
+        val isDark = sharedPref.getBoolean("is_dark_mode", false)
         themeIcon.setImageResource(if (isDark) R.drawable.ic_sun else R.drawable.ic_moon)
     }
 

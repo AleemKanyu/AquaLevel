@@ -17,4 +17,7 @@
 
     <color name="water_blue">#13B6EC</color>
     <color name="bar_blue">#A1C9F1</color>
+
+    <color name="blue_light">#A1C9F1</color>
+    <color name="blue_dark">#4A90E2</color>
 </resources>
