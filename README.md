@@ -85,10 +85,20 @@ ESP32 GPIO pins are **3.3V tolerant**, so a voltage divider is required for ECHO
 2. Enable Realtime Database / Firestore.
 3. Connect Firebase with Android app.
 
-### Android App
-1. Open project in Android Studio.
-2. Sync Gradle.
-3. Run on emulator or physical device.
+### Running the Flutter App
+1.  **Install Dependencies:**
+    ```bash
+    flutter pub get
+    ```
+2.  **Run the App:**
+    ```bash
+    flutter run
+    ```
+    This will launch the app on your connected device or emulator.
+3.  **List Devices:**
+    ```bash
+    flutter devices
+    ```
 
 ---
 

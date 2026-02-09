@@ -1,0 +1,61 @@
+name: aqua_level_flutter
+description: A new Flutter project for AquaLevel app.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+
+  # Navigation
+  go_router: ^13.0.1
+
+  # Local Database
+  drift: ^2.14.1
+  sqlite3_flutter_libs: ^0.5.18
+  path_provider: ^2.1.2
+  path: ^1.8.3
+  
+  # Remote Database (Firebase)
+  firebase_core: ^2.24.2
+  cloud_firestore: ^4.14.0
+  
+  # UI & Charts
+  fl_chart: ^0.66.0
+  google_fonts: ^6.1.0
+  percent_indicator: ^4.2.3
+
+  # Background Tasks
+  workmanager: ^0.5.2
+  flutter_local_notifications: ^16.3.0
+
+  # Utilities
+  intl: ^0.19.0
+  shared_preferences: ^2.2.2
+  uuid: ^4.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.7
+  riverpod_generator: ^2.3.9
+  freezed: ^2.4.6
+  json_serializable: ^6.7.1
+  drift_dev: ^2.14.1
+
+flutter:
+  uses-material-design: true
+  
+  # Assets
+  # assets:
+  #   - assets/images/

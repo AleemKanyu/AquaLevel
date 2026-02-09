@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1058099888216",
+    "project_id": "aqualevel-383e2",
+    "storage_bucket": "aqualevel-383e2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1058099888216:android:98471527e6b3304a05ca2d",
+        "android_client_info": {
+          "package_name": "com.example.aqualevel_"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDy5mkeoGeUlCK5dyx3g1cKGhYb9qTh5Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
