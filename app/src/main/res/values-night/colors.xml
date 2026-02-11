@@ -26,8 +26,24 @@
     <color name="duo_blue_shadow">#1899D6</color>
     <color name="duo_orange">#FF9600</color>
     <color name="duo_orange_shadow">#CC7900</color>
+    <color name="duo_purple">#CE82FF</color>
+    <color name="duo_purple_shadow">#A560D1</color>
+    <color name="duo_teal">#2CDAC5</color>
+    <color name="duo_teal_shadow">#1FA394</color>
+    <color name="duo_lime">#78C800</color>
+    <color name="duo_lime_shadow">#589600</color>
     
     <color name="water_blue">@color/duo_blue</color>
     <color name="bar_blue">@color/duo_blue_shadow</color>
     <color name="blue_dark">@color/duo_blue</color>
+
+    <!-- Notification Card Colors (Dark Mode) -->
+    <color name="notification_card_bg">#3E2723</color>
+    <color name="notification_icon_tint">#FFB74D</color>
+    <color name="notification_text_primary">#FFE0B2</color>
+    <color name="notification_text_secondary">#FFCC80</color>
+    <color name="notification_button_bg">#FFA726</color>
+    <color name="notification_button_text">@android:color/black</color>
+    
+    <color name="main_background">#121212</color>
 </resources>

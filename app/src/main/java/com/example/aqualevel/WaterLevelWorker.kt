@@ -27,14 +27,42 @@ class WaterLevelWorker(
         val distance = snapshot.getDouble("distance") ?: return Result.success()
         val timestamp = snapshot.getLong("timestamp") ?: return Result.success()
 
-        val nowSeconds = System.currentTimeMillis() / 1000
-        val ageSeconds = nowSeconds - timestamp
+        val diffMillis = System.currentTimeMillis() - timestamp
+        val ageSeconds = diffMillis / 1000
 
-        // If data is fresh (less than 10 mins old), process it
+        // Parse preferences
+        val sharedPref = applicationContext.getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        val emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
+        val fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
+        val tankVolume = sharedPref.getInt("tank_volume", 2000).toDouble()
+
+        val clampedDistance = distance.coerceIn(fullDistance, emptyDistance)
+        val percent = (((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0).toInt()
+        val volume = (percent / 100.0) * tankVolume
+
+        // Always update Widget Data regardless of age, so user sees the last known state & time
+        sharedPref.edit()
+            .putInt("last_percentage", percent)
+            .putInt("last_volume", volume.toInt())
+            .putLong("last_update_timestamp", timestamp) // Use the data's timestamp, not current time, to show accuracy
+            .apply()
+
+        val intent = android.content.Intent(applicationContext, WaterLevelWidget::class.java)
+        intent.action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
+        val ids = android.appwidget.AppWidgetManager.getInstance(applicationContext).getAppWidgetIds(android.content.ComponentName(applicationContext, WaterLevelWidget::class.java))
+        intent.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+        applicationContext.sendBroadcast(intent)
+
+        // Only process historical data insertion and notifications if data is fresh (e.g., < 10 mins old)
         if (ageSeconds <= 600) {
             val db = ReadingsDatabase.getInstance(applicationContext)
             val dao = db.getReadingsDao()
 
+            // Check if we should insert? Ideally we don't want to insert duplicates.
+            // But the worker runs periodically (15m). If the sensor data hasn't changed timestamp, we shouldn't insert.
+            // For now, let's keep the user's original logic but just fix the time check.
+            
+            // Note: Preventing duplicate insertions would be better, but let's stick to the fix first.
             val reading = Readings(
                 level = distance,
                 timestamp = System.currentTimeMillis()
@@ -43,14 +71,6 @@ class WaterLevelWorker(
             runBlocking {
                 dao.insert(reading)
             }
-
-            // --- Notification Logic for Background ---
-            val sharedPref = applicationContext.getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
-            val emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
-            val fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
-            
-            val clampedDistance = distance.coerceIn(fullDistance, emptyDistance)
-            val percent = (((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0).toInt()
             
             val notificationHelper = NotificationHelper(applicationContext)
             val lastNotified = sharedPref.getInt("last_notified_level", -1)

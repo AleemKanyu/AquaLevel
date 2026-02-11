@@ -4,14 +4,7 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Circular background -->
-    <path
-        android:fillColor="@color/white"
-        android:pathData="
-        M54,0
-        A54,54 0 1,1 53.9,0
-        Z
-    "/>
+
 
 
     <!-- Dark crescent -->

@@ -173,6 +173,19 @@ class MainActivity : AppCompatActivity() {
 
             checkAndSendNotifications(safePercent.toInt())
             viewModel.addReading(Readings(level = distance, timestamp = System.currentTimeMillis()))
+
+            // Update Widget Data
+            sharedPref.edit()
+                .putInt("last_percentage", safePercent.toInt())
+                .putInt("last_volume", value.toInt())
+                .putLong("last_update_timestamp", System.currentTimeMillis())
+                .apply()
+            
+            val intent = Intent(this, WaterLevelWidget::class.java)
+            intent.action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
+            val ids = android.appwidget.AppWidgetManager.getInstance(application).getAppWidgetIds(android.content.ComponentName(application, WaterLevelWidget::class.java))
+            intent.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+            sendBroadcast(intent)
         }
     }
 
@@ -239,8 +252,13 @@ class MainActivity : AppCompatActivity() {
         themeToggle.setOnClickListener {
             performHapticFeedbackCommon(it)
             val isDark = sharedPref.getBoolean("is_dark_mode", false)
-            sharedPref.edit().putBoolean("is_dark_mode", !isDark).apply()
-            recreate()
+            val newMode = !isDark
+            sharedPref.edit().putBoolean("is_dark_mode", newMode).apply()
+            
+            // Apply mode immediately to ensure recreate() picks it up
+            AppCompatDelegate.setDefaultNightMode(
+                if (newMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+            )
         }
 
         btnEnableNotifications.setOnClickListener {
