@@ -3,21 +3,37 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Light Theme Colors -->
+    <!-- Duolingo Style Palette -->
+    <color name="duo_green">#58CC02</color>
+    <color name="duo_green_shadow">#58A700</color>
+    
+    <color name="duo_blue">#1CB0F6</color>
+    <color name="duo_blue_shadow">#1899D6</color>
+    
+    <color name="duo_orange">#FF9600</color>
+    <color name="duo_orange_shadow">#CC7900</color>
+
+    <color name="duo_card_bg">#FFFFFF</color>
+    <color name="duo_border">#E5E5E5</color>
+    <color name="duo_text_primary">#4B4B4B</color>
+    <color name="duo_text_secondary">#777777</color>
+    
     <color name="background_light">#F0F7FA</color>
-    <color name="card_background_light">#FFFFFF</color>
-    <color name="text_primary_light">#000000</color>
-    <color name="text_secondary_light">#64748B</color>
+    <!-- Darker background for dark mode if needed later, but focusing on vibrant style now -->
+    
+    <!-- Legacy Mappings/Restoration for Compatibility -->
+    <color name="card_background_light">@color/duo_card_bg</color>
+    <color name="text_primary_light">@color/duo_text_primary</color>
+    <color name="text_secondary_light">@color/duo_text_secondary</color>
 
-    <!-- Dark Theme Colors -->
-    <color name="background_dark">#121212</color>
-    <color name="card_background_dark">#1E1E1E</color>
-    <color name="text_primary_dark">#F8FAFC</color>
-    <color name="text_secondary_dark">#94A3B8</color>
+    <color name="background_dark">@color/white</color>
+    <color name="card_background_dark">@color/duo_card_bg</color>
+    <color name="text_primary_dark">@color/duo_text_primary</color>
+    <color name="text_secondary_dark">@color/duo_text_secondary</color>
 
-    <color name="water_blue">#13B6EC</color>
-    <color name="bar_blue">#A1C9F1</color>
+    <color name="water_blue">@color/duo_blue</color>
+    <color name="bar_blue">@color/duo_blue_shadow</color>
 
-    <color name="blue_light">#A1C9F1</color>
-    <color name="blue_dark">#4A90E2</color>
+    <color name="blue_light">@color/duo_border</color>
+    <color name="blue_dark">@color/duo_blue</color>
 </resources>

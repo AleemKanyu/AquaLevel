@@ -10,10 +10,13 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.*
+import android.os.Vibrator
 import android.provider.Settings
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.*
+import android.view.HapticFeedbackConstants
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -234,12 +237,14 @@ class MainActivity : AppCompatActivity() {
         updateThemeIcon()
 
         themeToggle.setOnClickListener {
+            performHapticFeedbackCommon(it)
             val isDark = sharedPref.getBoolean("is_dark_mode", false)
             sharedPref.edit().putBoolean("is_dark_mode", !isDark).apply()
             recreate()
         }
 
         btnEnableNotifications.setOnClickListener {
+            performHapticFeedbackCommon(it)
             handleNotificationButtonClick()
         }
 
@@ -306,17 +311,20 @@ class MainActivity : AppCompatActivity() {
         scheduleBackgroundWorker()
 
         buttonCheck.setOnClickListener {
+            performHapticFeedbackCommon(it)
             it.animate().rotationBy(360f).setDuration(500).start()
             db.collection("sensorCommands").document("esp32_01").update("refresh", true)
         }
 
         analyticsButton.setOnClickListener {
+            performHapticFeedbackCommon(it)
             applyClickAnimation(it) {
                 startActivity(Intent(this, Analytics::class.java))
             }
         }
 
         settingsButton.setOnClickListener {
+            performHapticFeedbackCommon(it)
             applyClickAnimation(it) {
                 startActivity(Intent(this, SettingsActivity::class.java))
             }
@@ -427,5 +435,17 @@ class MainActivity : AppCompatActivity() {
             .setDuration((3000..6000).random().toLong())
             .withEndAction { waterLevel.removeView(bubble) }
             .start()
+    }
+
+    private fun performHapticFeedbackCommon(view: View) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+        } else {
+             // Fallback for older Android versions (like Android 7)
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            if (vibrator.hasVibrator()) {
+                vibrator.vibrate(50) // Vibrate for 50ms
+            }
+        }
     }
 }
