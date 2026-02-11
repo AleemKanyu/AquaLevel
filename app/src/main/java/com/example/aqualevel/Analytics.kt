@@ -82,8 +82,11 @@ class Analytics : AppCompatActivity() {
 
         themeToggle.setOnClickListener {
             val isDark = sharedPref.getBoolean("is_dark_mode", false)
-            sharedPref.edit().putBoolean("is_dark_mode", !isDark).apply()
-            recreate()
+            val newMode = !isDark
+            sharedPref.edit().putBoolean("is_dark_mode", newMode).apply()
+            AppCompatDelegate.setDefaultNightMode(
+                if (newMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+            )
         }
 
         val viewModel = ViewModelProvider(this)[ReadingViewModel::class.java]

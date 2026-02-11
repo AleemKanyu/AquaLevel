@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <gradient
-        android:startColor="#CCFBF1"
-        android:endColor="#2DD4BF"
-        android:angle="225"/>
-    <corners android:radius="32dp"/>
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Shadow Layer -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/duo_teal_shadow" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+    <!-- Top Card Layer -->
+    <item android:bottom="4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/duo_teal" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+</layer-list>

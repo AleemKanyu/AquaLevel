@@ -4,7 +4,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="@color/main_background"
     android:padding="4dp">
 
     <LinearLayout
@@ -100,7 +100,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:background="@drawable/bg_duo_card"
-                android:backgroundTint="#FFF3E0"
+                android:backgroundTint="@color/notification_card_bg"
                 android:layout_marginHorizontal="20dp"
                 android:padding="16dp"
                 android:gravity="center_vertical"
@@ -110,7 +110,7 @@
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:src="@drawable/ic_sync"
-                    app:tint="#FB8C00" />
+                    app:tint="@color/notification_icon_tint" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -123,7 +123,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Notifications Disabled"
-                        android:textColor="#E65100"
+                        android:textColor="@color/notification_text_primary"
                         android:textStyle="bold"
                         android:textSize="14sp"
                         android:fontFamily="sans-serif-black"/>
@@ -132,7 +132,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Tap to enable water level alerts"
-                        android:textColor="#EF6C00"
+                        android:textColor="@color/notification_text_secondary"
                         android:textSize="12sp"
                         android:fontFamily="sans-serif-medium"/>
                 </LinearLayout>
@@ -145,8 +145,8 @@
                     android:textSize="12sp"
                     android:paddingHorizontal="12dp"
                     android:background="@drawable/bg_duo_button"
-                    android:backgroundTint="#FB8C00"
-                    android:textColor="@android:color/white"
+                    android:backgroundTint="@color/notification_button_bg"
+                    android:textColor="@color/notification_button_text"
                     android:fontFamily="sans-serif-black"
                     android:insetTop="0dp"
                     android:insetBottom="0dp" />
@@ -179,14 +179,12 @@
                         
 
 
-                        <FrameLayout
+                        <com.example.aqualevel.WaveView
                             android:id="@+id/waterLevel"
                             android:layout_width="match_parent"
                             android:layout_height="280dp"
                             android:layout_gravity="bottom"
-                            android:layout_margin="4dp"
-                            android:background="@drawable/bg_water"
-                            android:clipToOutline="true" />
+                            android:layout_margin="4dp" />
                             
                         <FrameLayout
                             android:id="@+id/glass"
