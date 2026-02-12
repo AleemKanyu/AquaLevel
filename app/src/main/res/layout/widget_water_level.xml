@@ -30,7 +30,7 @@
             android:textStyle="bold"
             android:textSize="14sp" />
             
-        <Space
+        <FrameLayout
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_weight="1"/>
