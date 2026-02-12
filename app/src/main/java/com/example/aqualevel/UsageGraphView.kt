@@ -6,6 +6,10 @@ import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
 
+/**
+ * A custom view that renders a cubic Bézier curve graph for water usage data.
+ * Displays volume (Liters) on the Y-axis and time (Hours) on the X-axis.
+ */
 class UsageGraphView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
@@ -49,6 +53,10 @@ class UsageGraphView @JvmOverloads constructor(
 
     private var dataPoints: List<Float?> = emptyList()
 
+    /**
+     * Sets the hourly data points for the graph and triggers a redraw.
+     * @param points A list of 24 floating point values representing usage in Liters.
+     */
     fun setData(points: List<Float?>) {
         dataPoints = points
         invalidate()
@@ -57,7 +65,7 @@ class UsageGraphView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         val startColor = ContextCompat.getColor(context, R.color.duo_blue)
-        // Create a gradient for the fill
+        // Create a gradient for the fill below the line
         fillPaint.shader = LinearGradient(
             0f, 0f, 0f, h.toFloat(),
             intArrayOf(adjustAlpha(startColor, 0.4f), adjustAlpha(startColor, 0.05f)),
@@ -66,6 +74,9 @@ class UsageGraphView @JvmOverloads constructor(
         )
     }
 
+    /**
+     * Draws the graph components: grid lines, labels, Bézier path, and data points.
+     */
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         
@@ -79,12 +90,10 @@ class UsageGraphView @JvmOverloads constructor(
         val graphW = w - paddingLeft - paddingRight
         val graphH = h - paddingTop - paddingBottom
 
-        // Draw basic layout even if empty
         // Y-axis labels and grid lines
         val ySteps = 4
         textPaint.textAlign = Paint.Align.RIGHT
         
-        // Always assuming some max value for empty state 
         val maxVal = if (dataPoints.isEmpty()) 10f else (dataPoints.filterNotNull().maxOrNull()?.coerceAtLeast(10f) ?: 10f)
 
         for (i in 0..ySteps) {
@@ -92,7 +101,7 @@ class UsageGraphView @JvmOverloads constructor(
             val y = h - paddingBottom - (yVal / maxVal) * graphH
             canvas.drawText(yVal.toInt().toString(), paddingLeft - 20f, y + 8f, textPaint)
             
-            // Grid line
+            // Draw horizontal grid line
             canvas.drawLine(paddingLeft, y, w - paddingRight, y, gridPaint)
         }
         
@@ -110,16 +119,10 @@ class UsageGraphView @JvmOverloads constructor(
         val path = Path()
         val fillPath = Path()
         
-        var firstPoint = true
-        var lastX = 0f
-        var lastY = 0f
-
-        // Calculate points first to make curve calculation easier
         val points = mutableListOf<PointF>()
         dataPoints.forEachIndexed { i, val_ ->
              if (i >= totalHours) return@forEachIndexed
              val x = paddingLeft + i * stepX
-             // Treat null as 0 for continuity or skip? Treating as 0 for fill consistency
              val v = val_ ?: 0f
              val y = h - paddingBottom - (v / maxVal) * graphH
              points.add(PointF(x, y))
@@ -127,48 +130,41 @@ class UsageGraphView @JvmOverloads constructor(
 
         if (points.isEmpty()) return
 
-        // Fill Path
-        fillPath.moveTo(paddingLeft, h - paddingBottom) // Start at bottom-left
-        
-        // Stroke Path
+        // Initialize Paths
+        fillPath.moveTo(paddingLeft, h - paddingBottom)
         path.moveTo(points[0].x, points[0].y)
         fillPath.lineTo(points[0].x, points[0].y)
 
+        // Calculate cubic Bézier segments
         for (i in 0 until points.size - 1) {
             val p1 = points[i]
             val p2 = points[i + 1]
             
             val cp1X = p1.x + (p2.x - p1.x) * 0.5f
             val cp1Y = p1.y
-            val cp2X = p1.x + (p2.x - p1.x) * 0.5f // Control point approach: horizontal Bezier 
+            val cp2X = p1.x + (p2.x - p1.x) * 0.5f 
             val cp2Y = p2.y
             
-            // Using cubicTo with control points at halfway X but keeping Y same (horizontal inflection)
-            // effective for time series
             path.cubicTo(cp1X, cp1Y, cp2X, cp2Y, p2.x, p2.y)
             fillPath.cubicTo(cp1X, cp1Y, cp2X, cp2Y, p2.x, p2.y)
         }
         
-        // Close fill path
+        // Finalize fill path
         fillPath.lineTo(points.last().x, h - paddingBottom)
         fillPath.close()
 
-        // Draw fill first
         canvas.drawPath(fillPath, fillPaint)
-        // Draw line
         canvas.drawPath(path, linePaint)
 
-        // Draw dots and X-axis labels
+        // Draw labels and highlight data points
         textPaint.textAlign = Paint.Align.CENTER
         points.forEachIndexed { i, p ->
             val originalVal = dataPoints.getOrNull(i)
             
-            // Draw X label
-            if (i % 4 == 0) { // Every 4 hours
+            if (i % 4 == 0) { 
                  canvas.drawText(String.format("%02d", i), p.x, h - 30f, textPaint)
             }
             
-            // Draw dot if there's real data > 0
             if (originalVal != null && originalVal > 0) {
                 canvas.drawCircle(p.x, p.y, 8f, dotPaint)
                 canvas.drawCircle(p.x, p.y, 8f, dotStrokePaint)
@@ -176,6 +172,9 @@ class UsageGraphView @JvmOverloads constructor(
         }
     }
     
+    /**
+     * Adjusts the alpha transparency of a given color.
+     */
     private fun adjustAlpha(color: Int, factor: Float): Int {
         val alpha = (Color.alpha(color) * factor).toInt()
         val red = Color.red(color)

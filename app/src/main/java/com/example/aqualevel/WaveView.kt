@@ -10,6 +10,10 @@ import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import androidx.core.content.ContextCompat
 
+/**
+ * A custom FrameLayout that renders an animated wave effect at the top.
+ * Used for visual representation of the water surface.
+ */
 class WaveView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
@@ -39,9 +43,8 @@ class WaveView @JvmOverloads constructor(
                 val w = view.width
                 val h = view.height
                 
-                // Offset top by -radius to flatten top corners
-                // setRoundRect(left, top, right, bottom, radius)
-                outline.setRoundRect(0, (-radius).toInt(), w, h, radius)
+                // Top radius should match the container
+                outline.setRoundRect(0, 0, w, h, radius)
             }
         }
     }
@@ -56,6 +59,19 @@ class WaveView @JvmOverloads constructor(
         invalidateOutline()
     }
 
+    /**
+     * Draws the animated wave path on the canvas.
+     */
+    private var progress: Float = 0f // 0.0 to 1.0
+
+    /**
+     * Sets the water level progress (0 to 100).
+     */
+    fun setWaterLevel(percent: Int) {
+        this.progress = (percent / 100f).coerceIn(0f, 1f)
+        invalidate()
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         
@@ -67,23 +83,22 @@ class WaveView @JvmOverloads constructor(
         wavePath.reset()
         
         val angularFrequency = 2f * Math.PI / waveLength
+        val waterHeight = h * progress
+        val baseLine = h - waterHeight
         
         wavePath.moveTo(0f, h)
+        wavePath.lineTo(0f, baseLine)
         
         var x = 0f
         val step = 10f
         while (x <= w) {
-            val y = (waveAmplitude * Math.sin((angularFrequency * x) + waveOffset)).toFloat() + waveAmplitude
-            if (x == 0f) {
-                wavePath.lineTo(x, y)
-            } else {
-                wavePath.lineTo(x, y)
-            }
+            val y = (waveAmplitude * Math.sin((angularFrequency * x) + waveOffset)).toFloat() + baseLine + waveAmplitude
+            wavePath.lineTo(x, y)
             x += step
         }
         
         // Ensure right edge match
-        val finalY = (waveAmplitude * Math.sin((angularFrequency * w) + waveOffset)).toFloat() + waveAmplitude
+        val finalY = (waveAmplitude * Math.sin((angularFrequency * w) + waveOffset)).toFloat() + baseLine + waveAmplitude
         wavePath.lineTo(w, finalY)
 
         wavePath.lineTo(w, h)
@@ -92,6 +107,9 @@ class WaveView @JvmOverloads constructor(
         canvas.drawPath(wavePath, wavePaint)
     }
 
+    /**
+     * Starts the value animator that updates the wave offset for the animation.
+     */
     private fun startAnimation() {
         if (animator?.isRunning == true) return
         

@@ -80,8 +80,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
-                android:backgroundTint="?colorSurface"
+                android:background="@drawable/bg_duo_card"
                 android:orientation="vertical"
                 android:padding="16dp"
                 android:layout_marginBottom="24dp">
@@ -117,8 +116,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
-                android:backgroundTint="?colorSurface"
+                android:background="@drawable/bg_duo_card"
                 android:orientation="vertical"
                 android:padding="16dp"
                 android:layout_marginBottom="24dp">
@@ -140,8 +138,8 @@
 
                 <View
                     android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="?android:dividerVertical"
+                    android:layout_height="2dp"
+                    android:background="@color/duo_border"
                     android:layout_marginVertical="8dp"/>
 
                 <TextView
@@ -161,8 +159,8 @@
 
                 <View
                     android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="?android:dividerVertical"
+                    android:layout_height="2dp"
+                    android:background="@color/duo_border"
                     android:layout_marginVertical="8dp"/>
 
                 <TextView
@@ -184,10 +182,12 @@
             <Button
                 android:id="@+id/saveButton"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="64dp"
                 android:text="Save Settings"
-                android:textAllCaps="false"
-                android:backgroundTint="#A1C9F1"
+                android:textAllCaps="true"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:background="@drawable/bg_duo_button"
                 android:textColor="@android:color/white"
                 android:layout_marginBottom="16dp" />
 

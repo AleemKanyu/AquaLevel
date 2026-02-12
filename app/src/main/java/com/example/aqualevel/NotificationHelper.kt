@@ -9,6 +9,10 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
+/**
+ * Helper class to manage and display system notifications for water level alerts.
+ * Handles channel creation for Android O and above.
+ */
 class NotificationHelper(private val context: Context) {
     private val channelId = "water_level_notifications"
     private val channelName = "Water Level Alerts"
@@ -17,6 +21,9 @@ class NotificationHelper(private val context: Context) {
         createNotificationChannel()
     }
 
+    /**
+     * Creates a notification channel required for Android O (API 26) and higher.
+     */
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_HIGH
@@ -28,6 +35,13 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
+    /**
+     * Builds and displays a system notification.
+     * 
+     * @param title The title of the notification.
+     * @param message The body text of the notification.
+     * @param notificationId Unique ID to identify this specific notification instance.
+     */
     fun sendNotification(title: String, message: String, notificationId: Int) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -35,7 +49,7 @@ class NotificationHelper(private val context: Context) {
         val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher) // Updated to app icon
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

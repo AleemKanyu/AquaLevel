@@ -12,6 +12,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 
+/**
+ * Activity for managing user profile and sensor calibration settings.
+ * Allows users to update their name, tank dimensions (full/empty distances), and total volume.
+ */
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var editUserName: EditText
@@ -69,10 +73,14 @@ class SettingsActivity : AppCompatActivity() {
         loadSettings()
 
         saveButton.setOnClickListener {
-            saveSettings()
+            performHapticFeedbackCommon(it)
+            applyClickAnimation(it) {
+                saveSettings()
+            }
         }
 
         backButton.setOnClickListener {
+            performHapticFeedbackCommon(it)
             finish()
         }
 
@@ -94,22 +102,29 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         settingsButton.setOnClickListener {
+            performHapticFeedbackCommon(it)
             applyClickAnimation(it) {
                 Toast.makeText(this, "Already in Settings", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    /**
+     * Updates the theme icon (sun/moon) based on current preference.
+     */
     private fun updateThemeIcon() {
         val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
         val isDark = sharedPref.getBoolean("is_dark_mode", false)
         themeIcon.setImageResource(if (isDark) R.drawable.ic_sun else R.drawable.ic_moon)
     }
 
+    /**
+     * Applies a scale animation to a view when clicked.
+     */
     private fun applyClickAnimation(view: View, onAnimationEnd: () -> Unit) {
         view.animate()
-            .scaleX(0.85f)
-            .scaleY(0.85f)
+            .scaleX(0.95f)
+            .scaleY(0.95f)
             .setDuration(100)
             .withEndAction {
                 view.animate()
@@ -122,6 +137,23 @@ class SettingsActivity : AppCompatActivity() {
             .start()
     }
 
+    /**
+     * Performs a standard haptic feedback effect.
+     */
+    private fun performHapticFeedbackCommon(view: View) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            view.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
+        } else {
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            if (vibrator.hasVibrator()) {
+                vibrator.vibrate(50)
+            }
+        }
+    }
+
+    /**
+     * Loads calibration and user settings from SharedPreferences into the UI.
+     */
     private fun loadSettings() {
         val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
         val userName = sharedPref.getString("user_name", "")
@@ -135,6 +167,9 @@ class SettingsActivity : AppCompatActivity() {
         editVolume.setText(volume.toString())
     }
 
+    /**
+     * Validates and saves the user-provided settings to SharedPreferences.
+     */
     private fun saveSettings() {
         val sharedPref = getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE).edit()
 

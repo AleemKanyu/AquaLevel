@@ -17,13 +17,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import android.view.HapticFeedbackConstants
-import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -34,6 +32,12 @@ import com.google.firebase.firestore.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+/**
+ * The main screen of the application.
+ * Displays the current water level in a visual tank, weekly usage bar chart,
+ * and provides navigation to Analytics and Settings.
+ * It also handles Firebase real-time updates and notification permissions.
+ */
 class MainActivity : AppCompatActivity() {
     private lateinit var mondayBar: View
     private lateinit var tuesdayBar: View
@@ -52,7 +56,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var capacityValue: TextView
     private lateinit var dailyAvgValue: TextView
     private lateinit var percentage: TextView
-    private lateinit var waterLevel: FrameLayout
+    private lateinit var waterLevel: WaveView
     private lateinit var tankContainer: FrameLayout
     private lateinit var userNameTextView: TextView
 
@@ -70,9 +74,12 @@ class MainActivity : AppCompatActivity() {
     private val docRef = db.collection("sensorData").document("esp32_01")
 
     // ---------- CALIBRATION CONSTANTS (Default) ----------
+    /** Distance in cm from sensor to bottom when empty. */
     private var emptyDistance = 130.0
+    /** Distance in cm from sensor to water surface when full. */
     private var fullDistance = 20.0
-    private var tankVolume = 2000.0 // Total volume updated to 2000L
+    /** Total capacity of the tank in liters. */
+    private var tankVolume = 2000.0 
     // ------------------------------------------
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -104,6 +111,9 @@ class MainActivity : AppCompatActivity() {
         updateNotificationCardVisibility()
     }
 
+    /**
+     * Shows or hides the notification permission prompt based on current system settings.
+     */
     private fun updateNotificationCardVisibility() {
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
             notificationPermissionCard.visibility = View.GONE
@@ -112,6 +122,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Handles clicks on the notification button, requesting permission or redirecting to settings.
+     */
     private fun handleNotificationButtonClick() {
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
             notificationHelper.sendNotification("Manual Test", "Notifications are currently enabled!", 999)
@@ -119,7 +132,6 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else {
-                // Compatible redirection for Android 7 to 12
                 val intent = Intent()
                 when {
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
@@ -127,7 +139,6 @@ class MainActivity : AppCompatActivity() {
                         intent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
                     }
                     else -> {
-                        // Android 7 (Nougat)
                         intent.action = "android.settings.APP_NOTIFICATION_SETTINGS"
                         intent.putExtra("app_package", packageName)
                         intent.putExtra("app_uid", applicationInfo.uid)
@@ -145,18 +156,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Loads calibration values from SharedPreferences.
+     */
     private fun loadCalibrationSettings() {
         emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
         fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
         tankVolume = sharedPref.getInt("tank_volume", 2000).toDouble()
     }
 
+    /**
+     * Sets up a real-time listener for water level data from Firebase Firestore.
+     */
     private fun setupFirebaseListener() {
         listener?.remove()
         listener = docRef.addSnapshotListener { snapshot, error ->
             if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
 
             val distance = snapshot.getDouble("distance") ?: return@addSnapshotListener
+            
+            // Ignore invalid readings (0.0 or negative can happen on sensor error)
+            if (distance <= 0.0) return@addSnapshotListener
             
             val clampedDistance = distance.coerceIn(fullDistance, emptyDistance)
             val percent = ((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0
@@ -167,9 +187,7 @@ class MainActivity : AppCompatActivity() {
             capacityValue.text = "${value.toInt()} litres"
             percentage.text = "${safePercent.toInt()}%"
 
-            val params = waterLevel.layoutParams
-            params.height = dpToPx(this, ((280 * safePercent) / 100).toInt())
-            waterLevel.layoutParams = params
+            waterLevel.setWaterLevel(safePercent.toInt())
 
             checkAndSendNotifications(safePercent.toInt())
             viewModel.addReading(Readings(level = distance, timestamp = System.currentTimeMillis()))
@@ -189,20 +207,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Checks the water level and sends notifications if it's full or critically low.
+     */
     private fun checkAndSendNotifications(percent: Int) {
         val lastNotified = sharedPref.getInt("last_notified_level", -1)
         
-        // Notify at 100%
         if (percent >= 100 && lastNotified != 100) {
             notificationHelper.sendNotification("Tank Full!", "Your water tank is now 100% full.", 1001)
             sharedPref.edit().putInt("last_notified_level", 100).apply()
         } 
-        // Notify at or below 30%
         else if (percent <= 30 && lastNotified != 30) {
             notificationHelper.sendNotification("Low Water Level", "Warning: Tank level is at ${percent}%.", 1002)
             sharedPref.edit().putInt("last_notified_level", 30).apply()
         }
-        // Reset state if level is between 31 and 99
         else if (percent in 31..99) {
             sharedPref.edit().putInt("last_notified_level", -1).apply()
         }
@@ -255,7 +273,6 @@ class MainActivity : AppCompatActivity() {
             val newMode = !isDark
             sharedPref.edit().putBoolean("is_dark_mode", newMode).apply()
             
-            // Apply mode immediately to ensure recreate() picks it up
             AppCompatDelegate.setDefaultNightMode(
                 if (newMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
             )
@@ -271,7 +288,6 @@ class MainActivity : AppCompatActivity() {
             val maxBarHeight = dpToPx(this, 160)
             val totalDistRange = emptyDistance - fullDistance
 
-            // Get current day of week (0-6 starting Monday)
             val calendar = Calendar.getInstance()
             val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
             val currentDayIndex = when (dayOfWeek) {
@@ -290,7 +306,6 @@ class MainActivity : AppCompatActivity() {
                 params.height = dpToPx(this, 8)
                 bar.layoutParams = params
                 
-                // Set default color for other days
                 bar.backgroundTintList = ContextCompat.getColorStateList(this, if (index == currentDayIndex) R.color.blue_dark else R.color.blue_light)
             }
 
@@ -316,7 +331,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            // Calculate Daily Average
             if (daysWithData > 0) {
                 val avgDist = totalWeeklyUsedDist / daysWithData
                 val avgVolume = (avgDist / totalDistRange) * tankVolume
@@ -330,6 +344,7 @@ class MainActivity : AppCompatActivity() {
 
         buttonCheck.setOnClickListener {
             performHapticFeedbackCommon(it)
+            performRefreshVibration()
             it.animate().rotationBy(360f).setDuration(500).start()
             db.collection("sensorCommands").document("esp32_01").update("refresh", true)
         }
@@ -351,11 +366,17 @@ class MainActivity : AppCompatActivity() {
         checkUserPersistentData()
     }
 
+    /**
+     * Applies the dark/light mode theme based on user preference.
+     */
     private fun applyTheme() {
         val isDark = sharedPref.getBoolean("is_dark_mode", false)
         AppCompatDelegate.setDefaultNightMode(if (isDark) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
     }
 
+    /**
+     * Applies a scale-down and scale-up animation to a view when clicked.
+     */
     private fun applyClickAnimation(view: View, onAnimationEnd: () -> Unit) {
         view.animate()
             .scaleX(0.85f)
@@ -372,11 +393,17 @@ class MainActivity : AppCompatActivity() {
             .start()
     }
 
+    /**
+     * Checks if the user name is already saved; if not, prompts for input.
+     */
     private fun checkUserPersistentData() {
         val savedName = sharedPref.getString("user_name", null)
         if (savedName == null) showNameInputDialog() else userNameTextView.text = savedName
     }
 
+    /**
+     * Displays a dialog to input the user's name.
+     */
     private fun showNameInputDialog() {
         val inflater = LayoutInflater.from(this)
         val dialogView = inflater.inflate(R.layout.dialog_user_name, null)
@@ -402,6 +429,9 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    /**
+     * Updates the theme icon (sun/moon) based on current preference.
+     */
     private fun updateThemeIcon() {
         val isDark = sharedPref.getBoolean("is_dark_mode", false)
         themeIcon.setImageResource(if (isDark) R.drawable.ic_sun else R.drawable.ic_moon)
@@ -410,6 +440,9 @@ class MainActivity : AppCompatActivity() {
     private var bubbleHandler: Handler? = null
     private var bubbleRunnable: Runnable? = null
 
+    /**
+     * Starts spawning bubbles for the visual tank animation.
+     */
     private fun startBubbleAnimation() {
         bubbleHandler = Handler(mainLooper)
         bubbleRunnable = object : Runnable {
@@ -421,17 +454,61 @@ class MainActivity : AppCompatActivity() {
         bubbleHandler?.post(bubbleRunnable!!)
     }
 
+    /**
+     * Stops the bubble spawning animation.
+     */
     private fun stopBubbleAnimation() {
         bubbleHandler?.removeCallbacksAndMessages(null)
     }
 
+    /**
+     * Schedules a periodic background worker to monitor water levels.
+     */
     private fun scheduleBackgroundWorker() {
         val workRequest = PeriodicWorkRequestBuilder<WaterLevelWorker>(15, TimeUnit.MINUTES).build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork("water_level_monitor", ExistingPeriodicWorkPolicy.KEEP, workRequest)
     }
 
+    /**
+     * Helper to convert DP to Pixels.
+     */
     fun dpToPx(context: Context, dp: Int): Int = (dp * context.resources.displayMetrics.density).toInt()
 
+    /**
+     * Performs a 500ms vibration effect to match the refresh animation.
+     */
+    private fun performRefreshVibration() {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val manager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            manager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        if (vibrator.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Total ~500ms: 30on, 70off, 30on, 70off, 30on, 70off, 30on, 70off, 30on, 70off
+                val timings = longArrayOf(30, 70, 30, 70, 30, 70, 30, 70, 30, 70)
+                val amplitudes = intArrayOf(
+                    VibrationEffect.DEFAULT_AMPLITUDE, 0,
+                    VibrationEffect.DEFAULT_AMPLITUDE, 0,
+                    VibrationEffect.DEFAULT_AMPLITUDE, 0,
+                    VibrationEffect.DEFAULT_AMPLITUDE, 0,
+                    VibrationEffect.DEFAULT_AMPLITUDE, 0
+                )
+                vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+            } else {
+                @Suppress("DEPRECATION")
+                // Pattern: 0 wait, 30 vibrate, 70 pause... repeat 5 times for ~500ms
+                vibrator.vibrate(longArrayOf(0, 30, 70, 30, 70, 30, 70, 30, 70, 30, 70), -1)
+            }
+        }
+    }
+    
+    /**
+     * Spawns a single bubble that floats upwards within the water level view.
+     */
     fun spawnBubble(context: Context, waterLevel: FrameLayout) {
         val bubbleSizePx = dpToPx(context, (6..12).random())
         val bubble = View(context)
@@ -455,14 +532,16 @@ class MainActivity : AppCompatActivity() {
             .start()
     }
 
+    /**
+     * Performs a standard haptic feedback effect.
+     */
     private fun performHapticFeedbackCommon(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
         } else {
-             // Fallback for older Android versions (like Android 7)
             val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             if (vibrator.hasVibrator()) {
-                vibrator.vibrate(50) // Vibrate for 50ms
+                vibrator.vibrate(50)
             }
         }
     }
