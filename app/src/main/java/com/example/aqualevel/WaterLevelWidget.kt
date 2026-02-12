@@ -66,8 +66,8 @@ internal fun updateAppWidget(
         views.setTextViewText(R.id.widget_percentage, percentage.toString())
         views.setTextViewText(R.id.widget_capacity, "$volume L")
         
-        // Tint the icon for consistent branding
-        views.setInt(R.id.widget_icon, "setColorFilter", android.graphics.Color.parseColor("#1CB0F6")) // duo_blue
+        // Removed setColorFilter as it can cause crashes/failures on some Android versions 
+        // using non-remotable methods in RemoteViews.
         
         val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
         views.setTextViewText(R.id.widget_timestamp, sdf.format(Date(timestamp)))
