@@ -6,6 +6,8 @@
     <!-- Duolingo Style Palette -->
     <color name="duo_green">#58CC02</color>
     <color name="duo_green_shadow">#58A700</color>
+    <color name="duo_green_darker">#3D8C02</color>
+    <color name="duo_green_darker_shadow">#2D6601</color>
     
     <color name="duo_blue">#1CB0F6</color>
     <color name="duo_blue_shadow">#1899D6</color>

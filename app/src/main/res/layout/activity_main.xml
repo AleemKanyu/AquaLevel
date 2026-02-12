@@ -4,27 +4,17 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/main_background"
-    android:padding="4dp">
+    android:background="@color/main_background">
 
+    <!-- Persistent Top Bar -->
     <LinearLayout
         android:id="@+id/topBar"
-        android:layout_width="0dp"
-        android:layout_height="80dp"
-        android:gravity="center_vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        android:gravity="center_vertical"
         app:layout_constraintTop_toTopOf="parent">
-
-
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginRight="10dp"
-            android:background="@drawable/man" />
-
 
         <LinearLayout
             android:layout_width="0dp"
@@ -33,638 +23,53 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/welcome"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif-black"
-                android:gravity="center"
-                android:text="@string/welcome"
+                android:layout_height="wrap_content"
+                android:text="Welcome back,"
                 android:textColor="@color/duo_text_secondary"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:id="@+id/userName"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif-black"
-                android:gravity="center"
-                android:text="@string/user_name"
+                android:layout_height="wrap_content"
+                android:text="User"
                 android:textColor="@color/duo_text_primary"
-                android:textSize="20sp"
+                android:textSize="22sp"
+                android:fontFamily="sans-serif-black"
                 android:textStyle="bold" />
         </LinearLayout>
 
         <FrameLayout
             android:id="@+id/themeToggle"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="center"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:background="@drawable/bg_icon_rounded"
+            android:elevation="4dp"
             android:clickable="true"
-            android:focusable="true"
-            android:background="@drawable/bg_duo_card"
-            android:elevation="0dp">
+            android:focusable="true">
 
             <ImageView
                 android:id="@+id/themeIcon"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_moon"
-                app:tint="@color/duo_blue"/>
+                android:src="@drawable/ic_moon" />
         </FrameLayout>
-
     </LinearLayout>
 
-    <ScrollView
-        android:id="@+id/scrollBar"
+    <!-- ViewPager for Swipe Navigation -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/topBar">
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="10dp">
-
-            <!-- Notification Permission Card -->
-            <LinearLayout
-                android:id="@+id/notificationPermissionCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:background="@drawable/bg_duo_card"
-                android:backgroundTint="@color/notification_card_bg"
-                android:layout_marginHorizontal="20dp"
-                android:padding="16dp"
-                android:gravity="center_vertical"
-                android:visibility="gone">
-
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/ic_sync"
-                    app:tint="@color/notification_icon_tint" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_marginHorizontal="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Notifications Disabled"
-                        android:textColor="@color/notification_text_primary"
-                        android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:fontFamily="sans-serif-black"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tap to enable water level alerts"
-                        android:textColor="@color/notification_text_secondary"
-                        android:textSize="12sp"
-                        android:fontFamily="sans-serif-medium"/>
-                </LinearLayout>
-
-                <Button
-                    android:id="@+id/btnEnableNotifications"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="Enable"
-                    android:textSize="12sp"
-                    android:paddingHorizontal="12dp"
-                    android:background="@drawable/bg_duo_button"
-                    android:backgroundTint="@color/notification_button_bg"
-                    android:textColor="@color/notification_button_text"
-                    android:fontFamily="sans-serif-black"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp" />
-            </LinearLayout>
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="10dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/bg_duo_card"
-                android:layout_marginHorizontal="20dp">
-
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="330dp"
-                    android:layout_gravity="center_horizontal">
-
-                    <FrameLayout
-                        android:id="@+id/tankContainer"
-                        android:layout_width="200dp"
-                        android:layout_height="300dp"
-                        android:layout_gravity="center"
-                        android:layout_margin="50dp"
-                        android:clipChildren="false"
-                        android:clipToPadding="false">
-                        
-
-
-                        <com.example.aqualevel.WaveView
-                            android:id="@+id/waterLevel"
-                            android:layout_width="match_parent"
-                            android:layout_height="288dp"
-                            android:layout_gravity="bottom"
-                            android:layout_marginTop="12dp"
-                            android:layout_marginBottom="0dp"
-                            android:layout_marginStart="0dp"
-                            android:layout_marginEnd="0dp" />
-                            
-                        <FrameLayout
-                            android:id="@+id/glass"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_gravity="center"
-                            android:background="@drawable/tank_glass_overlay" />
-
-                        <TextView
-                            android:id="@+id/percentage"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:elevation="5dp"
-                            android:shadowColor="#40000000"
-                            android:shadowDx="1"
-                            android:shadowDy="4"
-                            android:shadowRadius="8"
-                            android:text="100%"
-                            android:textColor="@android:color/white"
-                            android:textSize="48sp"
-                            android:fontFamily="sans-serif-black"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:elevation="5dp"
-                            android:letterSpacing="0.2"
-                            android:shadowDx="10"
-                            android:shadowDy="10"
-                            android:shadowRadius="10"
-                            android:text="CAPACITY"
-                            android:textColor="@color/white"
-                            android:textSize="12sp"
-                            android:fontFamily="sans-serif-black"
-                            android:translationY="35dp" />
-                    </FrameLayout>
-                </FrameLayout>
-            </LinearLayout>
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="20dp" />
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="330dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginHorizontal="20dp"
-                android:background="@drawable/bg_duo_card"
-                android:paddingBottom="4dp"> <!-- Padding for bottom border -->
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center_horizontal"
-                    android:orientation="vertical">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:gravity="left"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="@drawable/bg_icon_rounded"
-                            android:padding="8dp"
-                            android:src="@drawable/ic_chart_bars"
-                            app:tint="@color/duo_blue" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="match_parent"
-                            android:layout_marginLeft="4dp"
-                            android:text="Daily Usage"
-                            android:textColor="@color/duo_text_primary"
-                            android:textSize="24sp"
-                            android:fontFamily="sans-serif-black"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:text="Analysis for the current week"
-                        android:textColor="@color/duo_text_secondary"
-                        android:fontFamily="sans-serif-medium"/>
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_horizontal"
-                        android:orientation="horizontal">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:gravity="center_horizontal"
-                            android:orientation="vertical">
-
-                            <FrameLayout
-                                android:layout_width="32dp"
-                                android:layout_height="160dp">
-
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_border" />
-
-                                <View
-                                    android:id="@+id/mondayBar"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="60dp"
-                                    android:layout_gravity="bottom"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_blue" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:id="@+id/monday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="M"
-                                android:textColor="@color/duo_text_secondary"
-                                android:textSize="12sp"
-                                android:fontFamily="sans-serif-black"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <!-- Repeating for other days, using the same pattern -->
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:gravity="center_horizontal"
-                            android:orientation="vertical">
-
-                            <FrameLayout
-                                android:layout_width="32dp"
-                                android:layout_height="160dp">
-
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_border" />
-
-                                <View
-                                    android:id="@+id/tuesdayBar"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="60dp"
-                                    android:layout_gravity="bottom"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_blue" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:id="@+id/tuesday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="T"
-                                android:textColor="@color/duo_text_secondary"
-                                android:textSize="12sp"
-                                android:fontFamily="sans-serif-black"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:gravity="center_horizontal"
-                            android:orientation="vertical">
-
-                            <FrameLayout
-                                android:layout_width="32dp"
-                                android:layout_height="160dp">
-
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_border" />
-
-                                <View
-                                    android:id="@+id/wedBar"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="60dp"
-                                    android:layout_gravity="bottom"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_blue" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:id="@+id/wed"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="W"
-                                android:textColor="@color/duo_text_secondary"
-                                android:textSize="12sp"
-                                android:fontFamily="sans-serif-black"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:gravity="center_horizontal"
-                            android:orientation="vertical">
-
-                            <FrameLayout
-                                android:layout_width="32dp"
-                                android:layout_height="160dp">
-
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_border" />
-
-                                <View
-                                    android:id="@+id/thursdayBar"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="60dp"
-                                    android:layout_gravity="bottom"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_blue" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:id="@+id/thursday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="T"
-                                android:textColor="@color/duo_text_secondary"
-                                android:textSize="12sp"
-                                android:fontFamily="sans-serif-black"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:gravity="center_horizontal"
-                            android:orientation="vertical">
-
-                            <FrameLayout
-                                android:layout_width="32dp"
-                                android:layout_height="160dp">
-
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_border" />
-
-                                <View
-                                    android:id="@+id/fridayBar"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="60dp"
-                                    android:layout_gravity="bottom"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_blue" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:id="@+id/friday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="F"
-                                android:textColor="@color/duo_text_secondary"
-                                android:textSize="12sp"
-                                android:fontFamily="sans-serif-black"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:gravity="center_horizontal"
-                            android:orientation="vertical">
-
-                            <FrameLayout
-                                android:layout_width="32dp"
-                                android:layout_height="160dp">
-
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_border" />
-
-                                <View
-                                    android:id="@+id/saturdayBar"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="60dp"
-                                    android:layout_gravity="bottom"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_blue" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:id="@+id/saturday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="S"
-                                android:textColor="@color/duo_text_secondary"
-                                android:textSize="12sp"
-                                android:fontFamily="sans-serif-black"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:gravity="center_horizontal"
-                            android:orientation="vertical">
-
-                            <FrameLayout
-                                android:layout_width="32dp"
-                                android:layout_height="160dp">
-
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_border" />
-
-                                <View
-                                    android:id="@+id/sundayBar"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="60dp"
-                                    android:layout_gravity="bottom"
-                                    android:background="@drawable/bg_bar_shape"
-                                    android:backgroundTint="@color/duo_blue" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:id="@+id/sunday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:text="S"
-                                android:textColor="@color/duo_text_secondary"
-                                android:textSize="12sp"
-                                android:fontFamily="sans-serif-black"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </LinearLayout>
-            </FrameLayout>
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="20dp" />
-
-            <LinearLayout
-                android:id="@+id/statsRow"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginHorizontal="20dp"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_duo_card"
-                    android:gravity="start"
-                    android:orientation="vertical"
-                    android:paddingTop="16dp" 
-                    android:paddingHorizontal="16dp"
-                    android:paddingBottom="20dp">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/waterwaves"
-                        app:tint="@color/duo_blue" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-black"
-                        android:text="TOTAL"
-                        android:layout_marginTop="8dp"
-                        android:textAlignment="textStart"
-                        android:textColor="@color/duo_text_secondary"
-                        android:textSize="12dp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/capacityValue"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="1,300 L"
-                        android:textAlignment="textStart"
-                        android:textColor="@color/duo_text_primary"
-                        android:textSize="20dp"
-                        android:fontFamily="sans-serif-black"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_duo_card"
-                    android:gravity="left"
-                    android:orientation="vertical"
-                    android:paddingTop="16dp"
-                    android:paddingHorizontal="16dp"
-                    android:paddingBottom="20dp">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/clock"
-                        app:tint="@color/duo_orange" />
-
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:fontFamily="sans-serif-black"
-                        android:text="DAILY AVG"
-                        android:textAlignment="textStart"
-                        android:textColor="@color/duo_text_secondary"
-                        android:textSize="12dp"
-                        android:textStyle="bold" />
-
-
-                    <TextView
-                        android:id="@+id/dailyAvgValue"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 L"
-                        android:textAlignment="center"
-                        android:textColor="@color/duo_text_primary"
-                        android:textSize="20dp"
-                        android:fontFamily="sans-serif-black"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="90dp" />
-        </LinearLayout>
-    </ScrollView>
-
-
+    <!-- Persistent Bottom Navbar -->
     <View
-        android:id="@+id/view2"
+        android:id="@+id/navbarBg"
         android:layout_width="match_parent"
         android:layout_height="72dp"
         android:layout_marginHorizontal="20dp"
@@ -675,73 +80,74 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- Navbar Selector Highlight -->
+    <View
+        android:id="@+id/navSelector"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/bg_duo_button"
+        android:elevation="5dp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@+id/navbarBg"
+        app:layout_constraintStart_toStartOf="@+id/navbarBg"
+        app:layout_constraintTop_toTopOf="@+id/navbarBg" />
+
+    <!-- Navbar Buttons - Active state will be managed dynamically -->
     <FrameLayout
-        android:id="@+id/homeButton"
-        android:clickable="true"
-        android:focusable="true"
-        android:stateListAnimator="@animator/card_press_anim"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:layout_marginBottom="45dp"
-        android:elevation="10dp"
-        android:padding="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        android:id="@+id/navAnalytics"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:elevation="7dp"
+        app:layout_constraintBottom_toBottomOf="@+id/navbarBg"
+        app:layout_constraintStart_toStartOf="@+id/navbarBg"
+        app:layout_constraintEnd_toStartOf="@+id/navHome"
+        app:layout_constraintTop_toTopOf="@+id/navbarBg">
 
         <ImageView
-            android:id="@+id/buttonCheck"
+            android:id="@+id/imgAnalytics"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:background="@drawable/bg_duo_button"
+            android:src="@drawable/graph_analytics"
             android:padding="16dp"
-            android:src="@drawable/ic_sync"
-            app:tint="@android:color/white" />
+            app:tint="@color/duo_text_secondary" />
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/analyticsButton"
-        android:clickable="true"
-        android:focusable="true"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/navHome"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:elevation="7dp"
-        android:padding="10dp"
-        app:layout_constraintBottom_toBottomOf="@+id/view2"
-        app:layout_constraintEnd_toStartOf="@+id/homeButton"
-        app:layout_constraintStart_toStartOf="@+id/view2"
-        app:layout_constraintTop_toTopOf="@+id/view2">
+        app:layout_constraintBottom_toBottomOf="@+id/navbarBg"
+        app:layout_constraintStart_toStartOf="@+id/navbarBg"
+        app:layout_constraintEnd_toEndOf="@+id/navbarBg"
+        app:layout_constraintTop_toTopOf="@+id/navbarBg">
 
         <ImageView
-            android:id="@+id/analyticsImage"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_gravity="center"
-            android:src="@drawable/graph_analytics" 
-            app:tint="@color/duo_text_secondary"/>
+            android:id="@+id/imgHome"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_home"
+            android:padding="16dp"
+            app:tint="@color/duo_text_secondary" />
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/settingsButton"
-        android:clickable="true"
-        android:focusable="true"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/navSettings"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:elevation="7dp"
-        android:padding="10dp"
-        app:layout_constraintBottom_toBottomOf="@+id/view2"
-        app:layout_constraintEnd_toEndOf="@+id/view2"
-        app:layout_constraintStart_toEndOf="@+id/homeButton"
-        app:layout_constraintTop_toTopOf="@+id/view2">
+        app:layout_constraintBottom_toBottomOf="@+id/navbarBg"
+        app:layout_constraintStart_toEndOf="@+id/navHome"
+        app:layout_constraintEnd_toEndOf="@+id/navbarBg"
+        app:layout_constraintTop_toTopOf="@+id/navbarBg">
 
         <ImageView
-            android:id="@+id/settingsImage"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_gravity="center"
-            android:src="@drawable/setting" 
-            app:tint="@color/duo_text_secondary"/>
+            android:id="@+id/imgSettings"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/setting"
+            android:padding="16dp"
+            app:tint="@color/duo_text_secondary" />
     </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

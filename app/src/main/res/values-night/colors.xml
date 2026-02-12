@@ -20,8 +20,10 @@
     <color name="blue_light">@color/duo_border</color>
 
     <!-- Keep brand colors vibrant -->
-    <color name="duo_green">#58CC02</color>
-    <color name="duo_green_shadow">#58A700</color>
+    <color name="duo_green">#78FF00</color>
+    <color name="duo_green_shadow">#5CB800</color>
+    <color name="duo_green_darker">#4B9E00</color>
+    <color name="duo_green_darker_shadow">#2E6100</color>
     <color name="duo_blue">#1CB0F6</color>
     <color name="duo_blue_shadow">#1899D6</color>
     <color name="duo_orange">#FF9600</color>

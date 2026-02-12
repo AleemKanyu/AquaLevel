@@ -5,61 +5,11 @@
     android:layout_height="match_parent"
     android:background="?android:windowBackground">
 
-    <LinearLayout
-        android:id="@+id/topBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center_vertical"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageView
-            android:id="@+id/backButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
-            android:src="@drawable/ic_back"
-            android:contentDescription="Back"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:layout_marginEnd="8dp"
-            app:tint="?android:textColorPrimary" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Settings"
-            android:textColor="?android:textColorPrimary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <FrameLayout
-            android:id="@+id/themeToggle"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="center"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="@drawable/bg_icon_rounded"
-            android:elevation="2dp">
-
-            <ImageView
-                android:id="@+id/themeIcon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_moon" />
-        </FrameLayout>
-    </LinearLayout>
-
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="100dp"
-        app:layout_constraintTop_toBottomOf="@id/topBar"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:paddingBottom="100dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -104,14 +54,34 @@
             </LinearLayout>
 
             <!-- Calibration Section -->
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Tank Calibration"
-                android:textColor="?colorSecondary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tank Calibration"
+                    android:textColor="?colorSecondary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚠️ ONLY change if sure"
+                    android:textColor="@color/duo_orange"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -187,96 +157,10 @@
                 android:textAllCaps="true"
                 android:textStyle="bold"
                 android:textSize="18sp"
-                android:background="@drawable/bg_duo_button"
+                android:background="@drawable/bg_duo_button_darker"
                 android:textColor="@android:color/white"
                 android:layout_marginBottom="16dp" />
 
         </LinearLayout>
     </ScrollView>
-
-    <View
-        android:id="@+id/navbarBg"
-        android:layout_width="match_parent"
-        android:layout_height="72dp"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="30dp"
-        android:background="@drawable/bg_duo_card"
-        android:elevation="3dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <FrameLayout
-        android:id="@+id/homeButton"
-        android:clickable="true"
-        android:focusable="true"
-        android:stateListAnimator="@animator/card_press_anim"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:elevation="7dp"
-        android:padding="10dp"
-        app:layout_constraintBottom_toBottomOf="@+id/navbarBg"
-        app:layout_constraintEnd_toEndOf="@+id/navbarBg"
-        app:layout_constraintStart_toStartOf="@+id/navbarBg"
-        app:layout_constraintTop_toTopOf="@+id/navbarBg">
-
-        <ImageView
-            android:id="@+id/buttonCheck"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_home"
-            android:padding="2dp"
-            app:tint="@color/duo_text_secondary" />
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/analyticsButton"
-        android:clickable="true"
-        android:focusable="true"
-        android:stateListAnimator="@animator/card_press_anim"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:elevation="7dp"
-        android:padding="10dp"
-        app:layout_constraintBottom_toBottomOf="@+id/navbarBg"
-        app:layout_constraintEnd_toStartOf="@+id/homeButton"
-        app:layout_constraintStart_toStartOf="@+id/navbarBg"
-        app:layout_constraintTop_toTopOf="@+id/navbarBg">
-
-        <ImageView
-            android:id="@+id/analyticsImage"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_gravity="center"
-            android:src="@drawable/graph_analytics"
-            android:padding="4dp"
-            app:tint="@color/duo_text_secondary" />
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/settingsButton"
-        android:clickable="true"
-        android:focusable="true"
-        android:stateListAnimator="@animator/card_press_anim"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:layout_marginBottom="45dp"
-        android:elevation="10dp"
-        android:padding="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/navbarBg"
-        app:layout_constraintStart_toEndOf="@+id/homeButton">
-
-        <ImageView
-            android:id="@+id/settingsImage"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:background="@drawable/bg_duo_button"
-            android:padding="16dp"
-            android:src="@drawable/setting"
-            app:tint="@android:color/white" />
-    </FrameLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

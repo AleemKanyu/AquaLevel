@@ -15,13 +15,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AquaLevel_">
         <activity
-            android:name=".SettingsActivity"
-            android:exported="false"
-            android:windowSoftInputMode="stateHidden" />
-        <activity
-            android:name=".Analytics"
-            android:exported="false" />
-        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
