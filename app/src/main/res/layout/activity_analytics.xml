@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout for the Analytics Activity.
+    This screen displays detailed water usage statistics and level information.
+    Components:
+    - Top Bar: User name and Theme toggle.
+    - Dashboard Cards: Current water level (%), Daily usage (L), Hourly average (L/h), and Estimated days left.
+    - Hourly Usage Graph: Visual representation of water consumption throughout the day.
+    - Bottom Navigation: Shortcut buttons for Home, Analytics, and Settings.
+-->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -104,6 +113,7 @@
                 android:paddingBottom="10dp">
 
                 <FrameLayout
+                    android:id="@+id/cardLevel"
                     android:layout_width="wrap_content"
                     android:layout_height="160dp"
                     android:layout_margin="8dp"
@@ -177,6 +187,7 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:id="@+id/cardUsage"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_margin="8dp"
@@ -262,6 +273,7 @@
                 android:paddingBottom="10dp">
 
                 <FrameLayout
+                    android:id="@+id/cardAvg"
                     android:layout_width="wrap_content"
                     android:layout_height="160dp"
                     android:layout_margin="8dp"
@@ -337,6 +349,7 @@
 
 
                 <FrameLayout
+                    android:id="@+id/cardTime"
                     android:layout_width="170dp"
                     android:layout_height="160dp"
                     android:layout_margin="8dp"

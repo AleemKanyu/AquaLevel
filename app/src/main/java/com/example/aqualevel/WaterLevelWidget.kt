@@ -11,7 +11,8 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Implementation of App Widget functionality.
+ * Implementation of the App Widget to display current water level on the home screen.
+ * Updates are triggered periodically by the system or manually via broadcasts.
  */
 class WaterLevelWidget : AppWidgetProvider() {
     override fun onUpdate(
@@ -34,6 +35,14 @@ class WaterLevelWidget : AppWidgetProvider() {
     }
 }
 
+/**
+ * Updates the visual state of a specific App Widget.
+ * Fetches the latest level and volume from SharedPreferences.
+ * 
+ * @param context The context used for resources and SharedPreferences.
+ * @param appWidgetManager The manager used to push updates.
+ * @param appWidgetId The ID of the widget being updated.
+ */
 internal fun updateAppWidget(
     context: Context,
     appWidgetManager: AppWidgetManager,
@@ -42,42 +51,36 @@ internal fun updateAppWidget(
     try {
         val prefs = context.getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
     
-        // Default calibration values if not set
-    val emptyDistance = prefs.getFloat("empty_distance", 130.0f).toDouble()
-    val fullDistance = prefs.getFloat("full_distance", 20.0f).toDouble()
-    val tankVolume = prefs.getInt("tank_volume", 2000).toDouble()
+        // Default calibration values
+        val emptyDistance = prefs.getFloat("empty_distance", 130.0f).toDouble()
+        val fullDistance = prefs.getFloat("full_distance", 20.0f).toDouble()
+        val tankVolume = prefs.getInt("tank_volume", 2000).toDouble()
     
-    // Get last known distance (if available, we might need to store this in prefs too, 
-    // currently MainActivity stores 'last_notified_level' but not exact distance.
-    // However, MainActivity calculates and displays. 
-    // We need 'distance' or 'percent' stored in Prefs to be accessible here.
-    // Let's assume we will update MainActivity to store 'last_percentage' and 'last_volume'
-    
-    val percentage = prefs.getInt("last_percentage", 0)
-    val volume = prefs.getInt("last_volume", 0)
-    val timestamp = prefs.getLong("last_update_timestamp", System.currentTimeMillis())
+        val percentage = prefs.getInt("last_percentage", 0)
+        val volume = prefs.getInt("last_volume", 0)
+        val timestamp = prefs.getLong("last_update_timestamp", System.currentTimeMillis())
 
-    val views = RemoteViews(context.packageName, R.layout.widget_water_level)
-    
-    // Update UI
-    views.setTextViewText(R.id.widget_percentage, percentage.toString())
-    views.setTextViewText(R.id.widget_capacity, "$volume L")
-    
-    // Programmatically tint the icon for compatibility
-    views.setInt(R.id.widget_icon, "setColorFilter", android.graphics.Color.parseColor("#1CB0F6")) // duo_blue
-    
-    val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
-    views.setTextViewText(R.id.widget_timestamp, sdf.format(Date(timestamp)))
+        val views = RemoteViews(context.packageName, R.layout.widget_water_level)
+        
+        // Update UI components
+        views.setTextViewText(R.id.widget_percentage, percentage.toString())
+        views.setTextViewText(R.id.widget_capacity, "$volume L")
+        
+        // Tint the icon for consistent branding
+        views.setInt(R.id.widget_icon, "setColorFilter", android.graphics.Color.parseColor("#1CB0F6")) // duo_blue
+        
+        val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
+        views.setTextViewText(R.id.widget_timestamp, sdf.format(Date(timestamp)))
 
-    // Click on widget opens MainActivity
-    val intent = Intent(context, MainActivity::class.java)
-    val pendingIntent = PendingIntent.getActivity(
-        context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-    views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+        // Click on widget opens MainActivity
+        val intent = Intent(context, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
 
-    // Instruct the widget manager to update the widget
-    appWidgetManager.updateAppWidget(appWidgetId, views)
+        // Instruct the widget manager to update the widget
+        appWidgetManager.updateAppWidget(appWidgetId, views)
     } catch (e: Exception) {
         e.printStackTrace()
     }
