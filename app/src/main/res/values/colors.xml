@@ -3,58 +3,71 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Duolingo Style Palette -->
-    <color name="duo_green">#58CC02</color>
-    <color name="duo_green_shadow">#58A700</color>
-    <color name="duo_green_darker">#3D8C02</color>
-    <color name="duo_green_darker_shadow">#2D6601</color>
+    <!-- Brand Colors -->
+    <color name="brand_primary">#1CB0F6</color> <!-- Duo Blue -->
+    <color name="brand_primary_shadow">#1899D6</color>
     
-    <color name="duo_blue">#1CB0F6</color>
-    <color name="duo_blue_shadow">#1899D6</color>
+    <color name="brand_success">#58CC02</color> <!-- Duo Green -->
+    <color name="brand_success_shadow">#58A700</color>
     
-    <color name="duo_orange">#FF9600</color>
-    <color name="duo_orange_shadow">#CC7900</color>
+    <color name="brand_warning">#FF9600</color> <!-- Duo Orange -->
+    <color name="brand_warning_shadow">#CC7900</color>
     
-    <color name="duo_purple">#CE82FF</color>
-    <color name="duo_purple_shadow">#A560D1</color>
+    <color name="brand_info">#CE82FF</color> <!-- Duo Purple -->
+    <color name="brand_info_shadow">#A560D1</color>
     
-    <color name="duo_teal">#2CDAC5</color>
-    <color name="duo_teal_shadow">#1FA394</color>
-    
-    <color name="duo_lime">#78C800</color>
-    <color name="duo_lime_shadow">#589600</color>
+    <color name="brand_accent">#2CDAC5</color> <!-- Duo Teal -->
+    <color name="brand_accent_shadow">#1FA394</color>
 
-    <color name="duo_card_bg">#FFFFFF</color>
-    <color name="duo_border">#E5E5E5</color>
-    <color name="duo_text_primary">#4B4B4B</color>
-    <color name="duo_text_secondary">#777777</color>
+    <!-- UI Semantic Colors (Light) -->
+    <color name="surface_background">#F0F7FA</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="border_color">#E5E5E5</color>
+    <color name="text_primary">#4B4B4B</color>
+    <color name="text_secondary">#777777</color>
     
-    <color name="background_light">#F0F7FA</color>
-    <!-- Darker background for dark mode if needed later, but focusing on vibrant style now -->
+    <!-- Legacy/Direct Mappings -->
+    <color name="duo_blue">@color/brand_primary</color>
+    <color name="duo_blue_shadow">@color/brand_primary_shadow</color>
+    <color name="duo_green">@color/brand_success</color>
+    <color name="duo_green_shadow">@color/brand_success_shadow</color>
+    <color name="duo_green_darker">@color/brand_success_shadow</color>
+    <color name="duo_green_darker_shadow">@color/brand_success_shadow</color>
+    <color name="duo_orange">@color/brand_warning</color>
+    <color name="duo_orange_shadow">@color/brand_warning_shadow</color>
+    <color name="duo_purple">@color/brand_info</color>
+    <color name="duo_purple_shadow">@color/brand_info_shadow</color>
+    <color name="duo_teal">@color/brand_accent</color>
+    <color name="duo_teal_shadow">@color/brand_accent_shadow</color>
+    <color name="duo_lime">@color/brand_success</color>
+    <color name="duo_lime_shadow">@color/brand_success_shadow</color>
+    <color name="duo_border">@color/border_color</color>
+    <color name="duo_card_bg">@color/surface_card</color>
+    <color name="duo_text_primary">@color/text_primary</color>
+    <color name="duo_text_secondary">@color/text_secondary</color>
+    <color name="blue_light">@color/border_color</color>
+    <color name="blue_dark">@color/brand_primary</color>
+    <color name="water_blue">@color/brand_primary</color>
+    <color name="bar_blue">@color/brand_primary_shadow</color>
+
+    <!-- Main Background -->
+    <color name="main_background">@color/white</color>
+    <color name="background_light">@color/surface_background</color>
     
-    <!-- Legacy Mappings/Restoration for Compatibility -->
+    <!-- Restore/Keep some for direct ref references -->
     <color name="card_background_light">@color/duo_card_bg</color>
     <color name="text_primary_light">@color/duo_text_primary</color>
     <color name="text_secondary_light">@color/duo_text_secondary</color>
-
     <color name="background_dark">@color/white</color>
     <color name="card_background_dark">@color/duo_card_bg</color>
     <color name="text_primary_dark">@color/duo_text_primary</color>
     <color name="text_secondary_dark">@color/duo_text_secondary</color>
 
-    <color name="water_blue">@color/duo_blue</color>
-    <color name="bar_blue">@color/duo_blue_shadow</color>
-
-    <color name="blue_light">@color/duo_border</color>
-    <color name="blue_dark">@color/duo_blue</color>
-
-    <!-- Notification Card Colors (Light Mode) -->
+    <!-- Notification Card Colors (Light Mode) - Harmonized -->
     <color name="notification_card_bg">#FFF3E0</color>
-    <color name="notification_icon_tint">#FB8C00</color>
+    <color name="notification_icon_tint">@color/brand_warning</color>
     <color name="notification_text_primary">#E65100</color>
     <color name="notification_text_secondary">#EF6C00</color>
-    <color name="notification_button_bg">#FB8C00</color>
+    <color name="notification_button_bg">@color/brand_warning</color>
     <color name="notification_button_text">@android:color/white</color>
-    
-    <color name="main_background">@color/white</color>
 </resources>

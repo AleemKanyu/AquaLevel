@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.*
 import android.provider.Settings
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -56,6 +57,7 @@ class HomeFragment : Fragment() {
     private var emptyDistance = 130.0
     private var fullDistance = 20.0
     private var tankVolume = 2000.0
+    private var volumeUnit = "L"
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -67,6 +69,15 @@ class HomeFragment : Fragment() {
         updateNotificationCardVisibility()
     }
 
+    private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+        if (key == "volume_unit" || key == "full_distance" || key == "empty_distance" || key == "tank_volume") {
+            loadCalibrationSettings()
+            // Force refresh UI values
+            viewModel.weeklyUsage.value?.let { updateWeeklyBars(it) }
+            setupFirebaseListener() // Refresh current value labels
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_home, container, false)
     }
@@ -74,6 +85,8 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        sharedPref.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
+        
         notificationHelper = NotificationHelper(requireContext())
         viewModel = ViewModelProvider(requireActivity())[ReadingViewModel::class.java]
 
@@ -98,6 +111,25 @@ class HomeFragment : Fragment() {
             handleNotificationButtonClick()
         }
 
+        // Add polish to stats cards
+        val statsContainer = view.findViewById<LinearLayout>(R.id.statsRow)
+        for (i in 0 until statsContainer.childCount) {
+            val child = statsContainer.getChildAt(i)
+            if (child is LinearLayout) {
+                child.setOnClickListener {
+                    performHapticFeedbackCommon(it)
+                    applyClickAnimation(it) {
+                        // Just animation for now, can add navigation later
+                    }
+                }
+            }
+        }
+
+        // Add rotate animation to sync icon (managed via imgHome in MainActivity)
+        // Note: HomeFragment doesn't have direct access to the refresh button pulse logic 
+        // as it's triggered from MainActivity's Refresh icon. 
+        // But we can add it to any local refresh trigger if planned.
+
         viewModel.weeklyUsage.observe(viewLifecycleOwner) { days ->
             updateWeeklyBars(days)
         }
@@ -105,6 +137,24 @@ class HomeFragment : Fragment() {
         loadCalibrationSettings()
         setupFirebaseListener()
         startBubbleAnimation()
+    }
+
+    private fun performHapticFeedbackCommon(view: View) {
+        val vibrationEnabled = sharedPref.getBoolean("vibration_enabled", true)
+        if (!vibrationEnabled) return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+        } else {
+            val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            if (vibrator.hasVibrator()) vibrator.vibrate(50)
+        }
+    }
+
+    private fun applyClickAnimation(view: View, onAnimationEnd: () -> Unit) {
+        view.animate().scaleX(0.95f).scaleY(0.95f).setDuration(100).withEndAction {
+            view.animate().scaleX(1f).scaleY(1f).setDuration(100).withEndAction { onAnimationEnd() }.start()
+        }.start()
     }
 
     private fun updateWeeklyBars(days: List<DailyUsage>) {
@@ -154,9 +204,14 @@ class HomeFragment : Fragment() {
         if (daysWithData > 0) {
             val avgDist = totalWeeklyUsedDist / daysWithData
             val avgVolume = (avgDist / totalDistRange) * tankVolume
-            dailyAvgValue.text = "${avgVolume.toInt()} L"
+            if (volumeUnit == "gal") {
+                val calVal = avgVolume * 0.264172
+                dailyAvgValue.text = "${calVal.toInt()} gal"
+            } else {
+                dailyAvgValue.text = "${avgVolume.toInt()} L"
+            }
         } else {
-            dailyAvgValue.text = "0 L"
+            dailyAvgValue.text = if (volumeUnit == "gal") "0 gal" else "0 L"
         }
     }
 
@@ -196,6 +251,7 @@ class HomeFragment : Fragment() {
         emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
         fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
         tankVolume = sharedPref.getInt("tank_volume", 2000).toDouble()
+        volumeUnit = sharedPref.getString("volume_unit", "L") ?: "L"
     }
 
     private fun setupFirebaseListener() {
@@ -209,8 +265,14 @@ class HomeFragment : Fragment() {
             val percent = ((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0
             val safePercent = percent.coerceIn(0.0, 100.0)
             value = (safePercent / 100.0) * tankVolume
-
-            capacityValue.text = "${value.toInt()} litres"
+            
+            if (volumeUnit == "gal") {
+                val galVal = value * 0.264172
+                capacityValue.text = "${galVal.toInt()} gallons"
+            } else {
+                capacityValue.text = "${value.toInt()} litres"
+            }
+            
             percentage.text = "${safePercent.toInt()}%"
             waterLevel.setWaterLevel(safePercent.toInt())
 
@@ -286,6 +348,7 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        sharedPref.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
         bubbleHandler?.removeCallbacksAndMessages(null)
         listener?.remove()
     }

@@ -42,6 +42,8 @@ class WaterLevelWorker(
         val emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
         val fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
         val tankVolume = sharedPref.getInt("tank_volume", 2000).toDouble()
+        val notificationsEnabled = sharedPref.getBoolean("notifications_enabled", true)
+        val alertThreshold = sharedPref.getInt("alert_threshold", 30)
 
         val clampedDistance = distance.coerceIn(fullDistance, emptyDistance)
         val percent = (((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0).toInt()
@@ -79,14 +81,16 @@ class WaterLevelWorker(
             val lastNotified = sharedPref.getInt("last_notified_level", -1)
 
             // Alert logic
-            if (percent >= 100 && lastNotified != 100) {
-                notificationHelper.sendNotification("Tank Full!", "Your water tank is now 100% full.", 1001)
-                sharedPref.edit().putInt("last_notified_level", 100).apply()
-            } else if (percent <= 30 && lastNotified != 30) {
-                notificationHelper.sendNotification("Low Water Level", "Warning: Tank level is at ${percent}%.", 1002)
-                sharedPref.edit().putInt("last_notified_level", 30).apply()
-            } else if (percent in 31..99) {
-                sharedPref.edit().putInt("last_notified_level", -1).apply()
+            if (notificationsEnabled) {
+                if (percent >= 100 && lastNotified != 100) {
+                    notificationHelper.sendNotification("Tank Full!", "Your water tank is now 100% full.", 1001)
+                    sharedPref.edit().putInt("last_notified_level", 100).apply()
+                } else if (percent <= alertThreshold && lastNotified != alertThreshold) {
+                    notificationHelper.sendNotification("Low Water Level", "Warning: Tank level is at ${percent}%.", 1002)
+                    sharedPref.edit().putInt("last_notified_level", alertThreshold).apply()
+                } else if (percent > alertThreshold && percent < 100) {
+                    sharedPref.edit().putInt("last_notified_level", -1).apply()
+                }
             }
         }
 

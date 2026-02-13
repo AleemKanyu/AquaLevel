@@ -55,10 +55,19 @@ class CardBackgroundView @JvmOverloads constructor(
     }
 
     override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0 || h <= 0) return
+
+        // Implement clipping for rounded corners (16dp)
+        val density = resources.displayMetrics.density
+        val radius = 16f * density
+        val clipPath = Path().apply {
+            addRoundRect(RectF(0f, 0f, w, h), radius, radius, Path.Direction.CW)
+        }
+        canvas.clipPath(clipPath)
+
+        super.onDraw(canvas)
 
         when (role) {
             Role.TANK_LEVEL -> drawWave(canvas, w, h)

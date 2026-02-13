@@ -19,12 +19,20 @@ class ReadingViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository: ReadingsRepository
 
+    private val _refreshTrigger = androidx.lifecycle.MutableLiveData<Unit>()
+    val refreshTrigger: LiveData<Unit> = _refreshTrigger
+
     init {
         val dao = ReadingsDatabase.getInstance(application).getReadingsDao()
         repository = ReadingsRepository(dao)
 
         allReadings = repository.allReadings
         weeklyUsage = repository.last7DaysUsage
+    }
+
+    /** Triggers a refresh of UI components observing these data sources. */
+    fun refreshAllReadings() {
+        _refreshTrigger.value = Unit
     }
 
     /**

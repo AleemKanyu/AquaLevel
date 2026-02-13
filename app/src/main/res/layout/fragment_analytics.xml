@@ -66,11 +66,10 @@
                     android:layout_height="140dp"
                     android:layout_weight="1"
                     android:layout_margin="8dp"
-                    android:background="@drawable/bg_purple_card"
+                    android:background="@drawable/bg_duo_card"
                     android:clickable="true"
                     android:elevation="2dp"
-                    android:focusable="true"
-                    app:cardCornerRadius="32dp">
+                    android:focusable="true">
 
                     <com.example.aqualevel.CardBackgroundView
                         android:id="@+id/bgLevel"
@@ -91,7 +90,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Tank \nLevel"
-                                android:textColor="@android:color/black"
+                                android:textColor="?android:textColorPrimary"
                                 android:textStyle="bold" />
 
                             <View
@@ -120,7 +119,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="85"
-                                android:textColor="@android:color/black"
+                                android:textColor="?android:textColorPrimary"
                                 android:textSize="32sp"
                                 android:textStyle="bold" />
 
@@ -128,7 +127,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="%"
-                                android:textColor="#5D5D5D"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="22sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -141,11 +140,10 @@
                     android:layout_height="140dp"
                     android:layout_weight="1"
                     android:layout_margin="8dp"
-                    android:background="@drawable/bg_teal_card"
+                    android:background="@drawable/bg_duo_card"
                     android:clickable="true"
                     android:elevation="2dp"
-                    android:focusable="true"
-                    app:cardCornerRadius="32dp">
+                    android:focusable="true">
 
                     <com.example.aqualevel.CardBackgroundView
                         android:id="@+id/bgUsage"
@@ -166,7 +164,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Daily \nUsage"
-                                android:textColor="@android:color/black"
+                                android:textColor="?android:textColorPrimary"
                                 android:textStyle="bold" />
 
                             <View
@@ -195,15 +193,16 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="120"
-                                android:textColor="@android:color/black"
+                                android:textColor="?android:textColorPrimary"
                                 android:textSize="32sp"
                                 android:textStyle="bold" />
 
                             <TextView
+                                android:id="@+id/dailyUsageUnit"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="L"
-                                android:textColor="#5D5D5D"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="22sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -227,11 +226,10 @@
                     android:layout_height="140dp"
                     android:layout_weight="1"
                     android:layout_margin="8dp"
-                    android:background="@drawable/bg_lime_card"
+                    android:background="@drawable/bg_duo_card"
                     android:clickable="true"
                     android:elevation="2dp"
-                    android:focusable="true"
-                    app:cardCornerRadius="32dp">
+                    android:focusable="true">
 
                     <com.example.aqualevel.CardBackgroundView
                         android:id="@+id/bgAvg"
@@ -252,7 +250,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Hourly \nAvg"
-                                android:textColor="@android:color/black"
+                                android:textColor="?android:textColorPrimary"
                                 android:textStyle="bold" />
 
                             <View
@@ -281,15 +279,16 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="15"
-                                android:textColor="@android:color/black"
+                                android:textColor="?android:textColorPrimary"
                                 android:textSize="32sp"
                                 android:textStyle="bold" />
 
                             <TextView
+                                android:id="@+id/hourlyAvgUnit"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="L/h"
-                                android:textColor="#5D5D5D"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="20sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -302,11 +301,10 @@
                     android:layout_height="140dp"
                     android:layout_weight="1"
                     android:layout_margin="8dp"
-                    android:background="@drawable/bg_blue_card"
+                    android:background="@drawable/bg_duo_card"
                     android:clickable="true"
                     android:elevation="2dp"
-                    android:focusable="true"
-                    app:cardCornerRadius="32dp">
+                    android:focusable="true">
 
                     <com.example.aqualevel.CardBackgroundView
                         android:id="@+id/bgTime"
@@ -327,7 +325,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Est. \nTime"
-                                android:textColor="@android:color/black"
+                                android:textColor="?android:textColorPrimary"
                                 android:textStyle="bold" />
 
                             <View
@@ -356,7 +354,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="5"
-                                android:textColor="@android:color/black"
+                                android:textColor="?android:textColorPrimary"
                                 android:textSize="32sp"
                                 android:textStyle="bold" />
 
@@ -364,7 +362,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Days"
-                                android:textColor="#5D5D5D"
+                                android:textColor="?android:textColorSecondary"
                                 android:textSize="20sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
