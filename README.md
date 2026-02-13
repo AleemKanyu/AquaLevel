@@ -22,34 +22,30 @@ This project is designed to be:
 
 ---
 
-## Features (Current Release – v1.0.0)
+## Features (Latest Release – v1.1.0)
 
-### Core
-
-* **Real-time water level display in Android app**
-* **Automatic hourly uploads from ESP32 to Firebase**
-* **Manual refresh from app for instant readings**
-* **Cloud sync for backup and cross-session access**
-* **Local data persistence using Room (data survives app restarts)**
+### 🌊 Core & Physics
+* **Realistic Water Physics Engine**: Custom column-based simulation with free flow, sloshing, and splash effects.
+* **Gyroscope Integration**: Water surface reacts dynamically to device tilt (toggleable in Settings).
+* **Real-time water level display**: Fluid animations with particle effects.
+* **Automatic hourly uploads** from ESP32 to Firebase.
+* **Offline Support**: Local data persistence using Room Database.
 
 ### Analytics & Visualization
+* **Interactive Charts**: "Draw path" animations for hourly, daily, and weekly usage.
+* **Smart Insights**: Trend indicators and average usage calculations.
+* **History Tracking**: Comprehensive logs of water consumption.
 
-* **Hourly analytics**
-* **Daily analytics**
-* **Weekly analytics**
-* **Advanced charts and trends**
+###  Controls & Customization
+* **Unit Conversion**: Toggle between **Liters** and **Gallons** instantly.
+* **Smart Alerts**: Customizable low-level thresholds with notification support.
+* **Tank Calibration**: Configure custom "Full" and "Empty" sensor distances.
+* **Haptic Feedback**: Tactile enhancements for interactive elements.
 
-### Alerts & Controls
-
-* **Low water level alerts / notifications**
-* **Custom threshold settings for alerts**
-
-### UI & App Experience
-
-* **Dark mode support**
-* **Settings page for app configuration**
-* **Clean and stable UI**
-* **Works offline with last synced data**
+###  UI & Design
+* **Duolingo-Inspired Aesthetic**: Vibrant cards, bold typography, and rounded geometry.
+* **Dark Mode**: High-contrast, battery-friendly dark theme (default).
+* **Smooth Animations**: Entry transitions and fluid interface updates.
 
 ---
 
@@ -66,11 +62,11 @@ This project is designed to be:
 
 ### Software
 
-* Android Studio
-* Kotlin
+* Android Studio (Koala Feature Drop)
+* Kotlin (Coroutines, Flow)
+* Android Jetpack (ViewModel, LiveData, Room)
 * Firebase Realtime Database
-* Arduino IDE
-* Room Database (local persistence)
+* Arduino IDE (for ESP32)
 
 ---
 
@@ -85,15 +81,7 @@ This project is designed to be:
 
 ---
 
-## Android App
 
-* **Live water level display**
-* **Manual refresh**
-* **Hourly, daily, weekly analytics**
-* **Advanced charts and trends**
-* **Room database for offline access**
-* **Dark mode**
-* **Settings page**
 ---
 
 ## Hardware Connections (Summary)
