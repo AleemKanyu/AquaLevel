@@ -28,6 +28,7 @@
     
     <!-- Legacy/Direct Mappings -->
     <color name="duo_blue">@color/brand_primary</color>
+    <color name="duo_blue_light">#E0F7FF</color>
     <color name="duo_blue_shadow">@color/brand_primary_shadow</color>
     <color name="duo_green">@color/brand_success</color>
     <color name="duo_green_shadow">@color/brand_success_shadow</color>
@@ -42,6 +43,7 @@
     <color name="duo_lime">@color/brand_success</color>
     <color name="duo_lime_shadow">@color/brand_success_shadow</color>
     <color name="duo_border">@color/border_color</color>
+    <color name="duo_border_light">#F5F5F5</color>
     <color name="duo_card_bg">@color/surface_card</color>
     <color name="duo_text_primary">@color/text_primary</color>
     <color name="duo_text_secondary">@color/text_secondary</color>

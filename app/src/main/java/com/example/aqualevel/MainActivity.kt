@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var imgSettings: ImageView
     private lateinit var navSelector: View
 
+    private lateinit var tvWelcome: TextView
     private lateinit var userNameTextView: TextView
     private lateinit var themeToggle: FrameLayout
     private lateinit var themeIcon: ImageView
@@ -53,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         userNameTextView = findViewById(R.id.userName)
+        tvWelcome = findViewById(R.id.tvWelcome) // Initialize tvWelcome
         checkUserPersistentData()
 
         themeToggle = findViewById(R.id.themeToggle)
@@ -135,9 +137,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ...
+
     private fun updateNavbarUI(position: Int) {
         val icons = listOf(imgAnalytics, imgHome, imgSettings)
         val containers = listOf(navAnalytics, navHome, navSettings)
+
+        // Update Header Text based on position
+        val userName = sharedPref.getString("user_name", "User") ?: "User"
+        when (position) {
+            0 -> { // Analytics
+                tvWelcome.text = "Your"
+                userNameTextView.text = "Analytics"
+            }
+            1 -> { // Home
+                tvWelcome.text = "Welcome back,"
+                userNameTextView.text = userName
+            }
+            2 -> { // Settings
+                tvWelcome.text = "App"
+                userNameTextView.text = "Settings"
+            }
+        }
 
         // Reset all icons to inactive state and ensure zero rotation
         icons.forEach { 

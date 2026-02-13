@@ -24,7 +24,12 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.firestore.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.LocalDate
 import java.util.*
+import android.animation.ValueAnimator
+import android.view.animation.DecelerateInterpolator
 
 class HomeFragment : Fragment() {
     private lateinit var mondayBar: View
@@ -40,6 +45,11 @@ class HomeFragment : Fragment() {
     private lateinit var percentage: TextView
     private lateinit var waterLevel: WaveView
     private lateinit var tankContainer: FrameLayout
+    private lateinit var trendIndicator: ImageView
+    private lateinit var confettiContainer: FrameLayout
+    
+    private var lastDisplayedValue: Double = 0.0
+    private var lastDisplayedPercent: Int = 0
 
     private lateinit var notificationPermissionCard: View
     private lateinit var btnEnableNotifications: Button
@@ -59,6 +69,21 @@ class HomeFragment : Fragment() {
     private var tankVolume = 2000.0
     private var volumeUnit = "L"
 
+    private var lastAvgDailyVolume = 0.0
+    private var lastKnownPercentage = -1
+    private var isFirstLoad = true
+
+    private fun animateWaterLevel(from: Int, to: Int, duration: Long) {
+        val animator = ValueAnimator.ofInt(from, to)
+        animator.duration = duration
+        animator.interpolator = DecelerateInterpolator()
+        animator.addUpdateListener { animation ->
+            val animatedValue = animation.animatedValue as Int
+            waterLevel.setWaterLevel(animatedValue)
+        }
+        animator.start()
+    }
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -73,7 +98,7 @@ class HomeFragment : Fragment() {
         if (key == "volume_unit" || key == "full_distance" || key == "empty_distance" || key == "tank_volume") {
             loadCalibrationSettings()
             // Force refresh UI values
-            viewModel.weeklyUsage.value?.let { updateWeeklyBars(it) }
+            viewModel.allReadings.value?.let { updateWeeklyBars(it) }
             setupFirebaseListener() // Refresh current value labels
         }
     }
@@ -94,7 +119,15 @@ class HomeFragment : Fragment() {
         dailyAvgValue = view.findViewById(R.id.dailyAvgValue)
         percentage = view.findViewById(R.id.percentage)
         waterLevel = view.findViewById(R.id.waterLevel)
+        
+        // Apply gyro water preference
+        val prefs = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        val gyroEnabled = prefs.getBoolean("gyro_water_enabled", false)
+        waterLevel.setGyroEnabled(gyroEnabled)
+        
         tankContainer = view.findViewById(R.id.tankContainer)
+        trendIndicator = view.findViewById(R.id.trendIndicator)
+        confettiContainer = view.findViewById(R.id.confettiContainer)
         
         notificationPermissionCard = view.findViewById(R.id.notificationPermissionCard)
         btnEnableNotifications = view.findViewById(R.id.btnEnableNotifications)
@@ -130,12 +163,19 @@ class HomeFragment : Fragment() {
         // as it's triggered from MainActivity's Refresh icon. 
         // But we can add it to any local refresh trigger if planned.
 
-        viewModel.weeklyUsage.observe(viewLifecycleOwner) { days ->
-            updateWeeklyBars(days)
+        // Authentic Features: Splash on Touch
+        tankContainer.setOnClickListener {
+            waterLevel.splash()
+            performHapticFeedbackCommon(view)
+        }
+
+        viewModel.allReadings.observe(viewLifecycleOwner) { readings ->
+            updateWeeklyBars(readings)
         }
 
         loadCalibrationSettings()
         setupFirebaseListener()
+        setupInteractionListeners()
         startBubbleAnimation()
     }
 
@@ -157,14 +197,13 @@ class HomeFragment : Fragment() {
         }.start()
     }
 
-    private fun updateWeeklyBars(days: List<DailyUsage>) {
+    private fun updateWeeklyBars(allReadings: List<Readings>) {
         val bars = listOf(mondayBar, tuesdayBar, wedBar, thursdayBar, fridayBar, saturdayBar, sundayBar)
         val maxBarHeight = dpToPx(requireContext(), 160)
         val totalDistRange = emptyDistance - fullDistance
 
         val calendar = Calendar.getInstance()
-        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-        val currentDayIndex = when (dayOfWeek) {
+        val currentDayIndex = when (calendar.get(Calendar.DAY_OF_WEEK)) {
             Calendar.MONDAY -> 0
             Calendar.TUESDAY -> 1
             Calendar.WEDNESDAY -> 2
@@ -175,35 +214,54 @@ class HomeFragment : Fragment() {
             else -> 0
         }
 
+        // Initialize bars background and highlight current day
         bars.forEachIndexed { index, bar ->
             val params = bar.layoutParams
             params.height = dpToPx(requireContext(), 8)
             bar.layoutParams = params
-            bar.backgroundTintList = ContextCompat.getColorStateList(requireContext(), if (index == currentDayIndex) R.color.blue_dark else R.color.blue_light)
+            bar.backgroundTintList = ContextCompat.getColorStateList(requireContext(), 
+                if (index == currentDayIndex) R.color.brand_primary_shadow else R.color.brand_primary)
         }
 
-        var totalWeeklyUsedDist = 0.0
+        var totalWeeklyUsedVol = 0.0
         var daysWithData = 0
 
-        days.take(7).forEachIndexed { index, usage ->
-            val usedDist = (usage.maxLevel - usage.minLevel).coerceAtLeast(0.0)
-            if (usedDist > 0) {
-                totalWeeklyUsedDist += usedDist
+        // Get start of the week (Monday) at midnight
+        val monday = Calendar.getInstance().apply {
+            firstDayOfWeek = Calendar.MONDAY
+            set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        // Iterate through Monday to Sunday
+        for (i in 0..6) {
+            val dayCalendar = (monday.clone() as Calendar).apply {
+                add(Calendar.DAY_OF_YEAR, i)
+            }
+            
+            // Filter readings for this specific day
+            val dayReadings = allReadings.filter { isSameDay(it.timestamp, dayCalendar.timeInMillis) }
+            val dayVolume = calculateConsumption(dayReadings)
+
+            if (dayVolume > 0) {
+                totalWeeklyUsedVol += dayVolume
                 daysWithData++
             }
-            val normalized = (usedDist / totalDistRange).coerceIn(0.0, 1.0)
+
+            val normalized = (dayVolume / tankVolume).coerceIn(0.0, 1.0)
             val barHeight = (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(requireContext(), 8))
-            val barIndex = 6 - index
-            if (barIndex in bars.indices) {
-                val params = bars[barIndex].layoutParams
-                params.height = barHeight
-                bars[barIndex].layoutParams = params
-            }
+            
+            val params = bars[i].layoutParams
+            params.height = barHeight
+            bars[i].layoutParams = params
         }
 
         if (daysWithData > 0) {
-            val avgDist = totalWeeklyUsedDist / daysWithData
-            val avgVolume = (avgDist / totalDistRange) * tankVolume
+            val avgVolume = totalWeeklyUsedVol / daysWithData
+            lastAvgDailyVolume = avgVolume // Store for smart prediction
             if (volumeUnit == "gal") {
                 val calVal = avgVolume * 0.264172
                 dailyAvgValue.text = "${calVal.toInt()} gal"
@@ -213,6 +271,30 @@ class HomeFragment : Fragment() {
         } else {
             dailyAvgValue.text = if (volumeUnit == "gal") "0 gal" else "0 L"
         }
+    }
+
+    private fun calculateConsumption(readings: List<Readings>): Double {
+        if (readings.size < 2) return 0.0
+        val sortedReadings = readings.sortedBy { it.timestamp }
+        var totalUsedDist = 0.0
+        val totalDistRange = emptyDistance - fullDistance
+        if (totalDistRange <= 0) return 0.0
+
+        for (i in 0 until sortedReadings.size - 1) {
+            val r1 = sortedReadings[i]
+            val r2 = sortedReadings[i + 1]
+            // Sum only positive distance increases (water level drops)
+            if (r2.level > r1.level) {
+                totalUsedDist += (r2.level - r1.level)
+            }
+        }
+        return (totalUsedDist / totalDistRange) * tankVolume
+    }
+
+    private fun isSameDay(t1: Long, t2: Long): Boolean {
+        val d1 = Instant.ofEpochMilli(t1).atZone(ZoneId.systemDefault()).toLocalDate()
+        val d2 = Instant.ofEpochMilli(t2).atZone(ZoneId.systemDefault()).toLocalDate()
+        return d1 == d2
     }
 
     private fun handleNotificationButtonClick() {
@@ -268,13 +350,46 @@ class HomeFragment : Fragment() {
             
             if (volumeUnit == "gal") {
                 val galVal = value * 0.264172
-                capacityValue.text = "${galVal.toInt()} gallons"
+                val oldGalVal = lastDisplayedValue * 0.264172
+                capacityValue.animateCountUp(galVal.toInt(), oldGalVal.toInt(), 1000, " gallons")
             } else {
-                capacityValue.text = "${value.toInt()} litres"
+                capacityValue.animateCountUp(value.toInt(), lastDisplayedValue.toInt(), 1000, " litres")
             }
             
-            percentage.text = "${safePercent.toInt()}%"
-            waterLevel.setWaterLevel(safePercent.toInt())
+            percentage.animateCountUp(safePercent.toInt(), lastDisplayedPercent, 1000, "%")
+            
+            lastDisplayedValue = value
+            lastDisplayedPercent = safePercent.toInt()
+            // Animate water level
+            if (isFirstLoad) {
+                // First load: Animate from 0 to current
+                animateWaterLevel(0, safePercent.toInt(), 2000)
+                isFirstLoad = false
+            } else {
+                // Update: Animate from last to current
+                animateWaterLevel(lastDisplayedPercent, safePercent.toInt(), 1000)
+            }
+            
+            // waterLevel.setWaterLevel(safePercent.toInt()) // Replaced by animation
+
+            // Feature: Dynamic Wave Color based on level
+            val waveColor = if (safePercent <= 25) {
+                ContextCompat.getColor(requireContext(), R.color.brand_warning)
+            } else {
+                ContextCompat.getColor(requireContext(), R.color.duo_blue)
+            }
+            waterLevel.setWaveColor(waveColor)
+
+            // Feature: Refill detection
+            if (lastKnownPercentage != -1 && safePercent > lastKnownPercentage + 10) {
+                onRefillDetected()
+            }
+            // Trend Indicator
+            if (lastKnownPercentage != -1) {
+                updateTrendIndicator(safePercent.toInt(), lastKnownPercentage)
+            }
+            lastKnownPercentage = safePercent.toInt()
+
 
             checkAndSendNotifications(safePercent.toInt())
             viewModel.addReading(Readings(level = distance, timestamp = System.currentTimeMillis()))
@@ -351,6 +466,92 @@ class HomeFragment : Fragment() {
         sharedPref.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
         bubbleHandler?.removeCallbacksAndMessages(null)
         listener?.remove()
+    }
+
+    private fun setupInteractionListeners() {
+        // Haptic feedback for main usage card
+        val usageCard = view?.findViewById<View>(R.id.usageCardContainer) ?: view?.findViewById<FrameLayout>(R.id.mondayBar)?.parent?.parent?.parent as? View
+        usageCard?.setOnClickListener {
+            performHapticFeedbackCommon(it)
+        }
+
+        // Haptic feedback for stats cards (using IDs if found, or positions)
+        view?.findViewById<View>(R.id.capacityCard)?.setOnClickListener { performHapticFeedbackCommon(it) }
+        view?.findViewById<View>(R.id.avgUsageCard)?.setOnClickListener { performHapticFeedbackCommon(it) }
+    }
+
+
+    private fun onRefillDetected() {
+        view?.let { performHapticFeedbackCommon(it) }
+        // Pulse animation on percentage text
+        percentage.animate()
+            .scaleX(1.4f)
+            .scaleY(1.4f)
+            .setDuration(300)
+            .withEndAction {
+                percentage.animate().scaleX(1f).scaleY(1f).setDuration(300).start()
+            }
+            .start()
+        
+        Toast.makeText(requireContext(), "Refill Detected! \uD83D\uDCA7", Toast.LENGTH_SHORT).show()
+        startConfetti()
+    }
+
+    private fun updateTrendIndicator(current: Int, previous: Int) {
+        if (current == previous) {
+            trendIndicator.visibility = View.INVISIBLE
+            return
+        }
+        trendIndicator.visibility = View.VISIBLE
+        trendIndicator.animate().cancel()
+        
+        if (current > previous) {
+            // Filling up - Arrow Up (Greenish)
+            trendIndicator.rotation = 180f
+            trendIndicator.imageTintList = ContextCompat.getColorStateList(requireContext(), R.color.duo_lime)
+            trendIndicator.animate().translationY(-10f).setDuration(300).withEndAction { 
+                trendIndicator.animate().translationY(0f).setDuration(300).start() 
+            }.start()
+        } else {
+            // Using water - Arrow Down (Reddish/Orange)
+            trendIndicator.rotation = 0f
+            trendIndicator.imageTintList = ContextCompat.getColorStateList(requireContext(), R.color.brand_warning)
+            trendIndicator.animate().translationY(10f).setDuration(300).withEndAction { 
+                trendIndicator.animate().translationY(0f).setDuration(300).start() 
+            }.start()
+        }
+    }
+
+    private fun startConfetti() {
+        if (!isAdded) return
+        val colors = listOf(
+            0xFF4CB5F9.toInt(), // Blue
+            0xFF58CC02.toInt(), // Green
+            0xFFFFD700.toInt(), // Yellow
+            0xFFFF4B4B.toInt()  // Red
+        )
+        
+        for (i in 0..30) {
+            val confetti = View(requireContext())
+            val size = dpToPx(requireContext(), (4..8).random())
+            confetti.layoutParams = FrameLayout.LayoutParams(size, size).apply {
+                gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
+                leftMargin = (-300..300).random()
+            }
+            confetti.background = GradientDrawable().apply {
+                shape = if (i % 2 == 0) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
+                setColor(colors.random())
+            }
+            
+            confettiContainer.addView(confetti)
+            
+            confetti.animate()
+                .translationY(confettiContainer.height.toFloat() + 200)
+                .rotation((0..360).random().toFloat())
+                .setDuration((1500..3000).random().toLong())
+                .withEndAction { confettiContainer.removeView(confetti) }
+                .start()
+        }
     }
 
     private fun dpToPx(context: Context, dp: Int): Int = (dp * context.resources.displayMetrics.density).toInt()

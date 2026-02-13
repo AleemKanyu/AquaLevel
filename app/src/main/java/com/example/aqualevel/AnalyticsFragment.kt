@@ -131,7 +131,30 @@ class AnalyticsFragment : Fragment() {
                 val latest = readings.first()
                 val clampedLatest = latest.level.coerceIn(fullDistance, emptyDistance)
                 val currentPercent = (((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * 100).toInt()
-                percentageText.text = currentPercent.toString()
+                percentageText.animateCountUp(currentPercent, 0, 1000)
+
+                // Add subtle pulse if level is low (< 30%)
+                if (currentPercent < 30) {
+                    if (percentageText.animation == null) {
+                        percentageText.animate()
+                            .scaleX(1.1f)
+                            .scaleY(1.1f)
+                            .setDuration(1000)
+                            .setInterpolator(android.view.animation.CycleInterpolator(1f))
+                            .withEndAction { 
+                                if (isAdded && percentageText.text.toString().toIntOrNull() ?: 100 < 30) {
+                                    // Restart if still low
+                                    percentageText.alpha = 1f // Dummy change to allow restart or just call again
+                                    // Actually, a Repeatable animator would be better, but let's keep it simple
+                                }
+                            }
+                            .start()
+                    }
+                } else {
+                    percentageText.animate().cancel()
+                    percentageText.scaleX = 1f
+                    percentageText.scaleY = 1f
+                }
 
                 val todayReadings = readings.filter { isSameDay(it.timestamp, System.currentTimeMillis()) }
 
@@ -143,10 +166,10 @@ class AnalyticsFragment : Fragment() {
                     val usedVolume = (usedDist / totalDistRange) * tankVolume * displayMultiplier
                     if (volumeUnit == "gal") {
                         val galVal = usedVolume * 0.264172
-                        dailyUsageText.text = galVal.toInt().toString()
+                        dailyUsageText.animateCountUp(galVal.toInt(), 0, 1000)
                         view.findViewById<TextView>(R.id.dailyUsageUnit).text = "gal"
                     } else {
-                        dailyUsageText.text = usedVolume.toInt().toString()
+                        dailyUsageText.animateCountUp(usedVolume.toInt(), 0, 1000)
                         view.findViewById<TextView>(R.id.dailyUsageUnit).text = "L"
                     }
                 } else {
@@ -158,17 +181,17 @@ class AnalyticsFragment : Fragment() {
                 
                 if (volumeUnit == "gal") {
                     val galVal = hourlyAvg * 0.264172
-                    hourlyAvgText.text = galVal.toInt().toString()
+                    hourlyAvgText.animateCountUp(galVal.toInt(), 0, 1000)
                     view.findViewById<TextView>(R.id.hourlyAvgUnit).text = "gal/h"
                 } else {
-                    hourlyAvgText.text = hourlyAvg.toInt().toString()
+                    hourlyAvgText.animateCountUp(hourlyAvg.toInt(), 0, 1000)
                     view.findViewById<TextView>(R.id.hourlyAvgUnit).text = "L/h"
                 }
 
                 if (avgDailyUsageVolume > 0) {
                     val currentVolume = ((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * tankVolume * displayMultiplier
-                    val daysLeft = (currentVolume / avgDailyUsageVolume).toInt()
-                    daysLeftText.text = daysLeft.toString()
+                    val daysLeft = (currentVolume / avgDailyUsageVolume)
+                    daysLeftText.animateCountUp(daysLeft.toInt(), 0, 1000)
                 } else {
                     daysLeftText.text = "--"
                 }

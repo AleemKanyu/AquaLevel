@@ -3,301 +3,431 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:windowBackground">
+    android:background="@color/main_background">
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="100dp">
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingHorizontal="20dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="120dp">
+
+            <!-- Title -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Settings"
+                android:textColor="@color/duo_text_primary"
+                android:textSize="28sp"
+                android:fontFamily="sans-serif-black"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="24dp"/>
 
             <!-- Profile Section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Profile"
-                android:textColor="?colorSecondary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_duo_card"
                 android:orientation="vertical"
-                android:padding="16dp"
-                android:layout_marginBottom="24dp">
+                android:gravity="center_horizontal"
+                android:layout_marginBottom="32dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="User Name"
-                    android:textColor="?android:textColorSecondary"
-                    android:textSize="12sp" />
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="60dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp"
+                    app:cardBackgroundColor="@color/duo_blue_light">
+                        
+                    <com.example.aqualevel.WaveView
+                        android:id="@+id/profileWaveView"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:alpha="0.9"/>
+                        
+                    <ImageView
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:src="@drawable/user"
+                        android:layout_gravity="center"
+                        app:tint="@color/duo_blue"/>
+                </com.google.android.material.card.MaterialCardView>
 
-                <EditText
-                    android:id="@+id/editUserName"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter your name"
-                    android:textColor="?android:textColorPrimary"
-                    android:background="@null"
-                    android:paddingVertical="8dp"
-                    android:inputType="textPersonName" />
-            </LinearLayout>
+                    android:hint="DISPLAY NAME"
+                    app:boxStrokeWidth="2dp"
+                    app:boxStrokeColor="@color/duo_blue"
+                    app:hintTextColor="@color/duo_blue"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-            <!-- Calibration Section -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Tank Calibration"
-                    android:textColor="?colorSecondary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="⚠️ ONLY change if sure"
-                    android:textColor="@color/duo_orange"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_duo_card"
-                android:orientation="vertical"
-                android:padding="16dp"
-                android:layout_marginBottom="24dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Full Distance (cm)"
-                    android:textColor="?android:textColorSecondary"
-                    android:textSize="12sp" />
-                <EditText
-                    android:id="@+id/editFullDist"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="e.g. 20"
-                    android:background="@null"
-                    android:paddingVertical="8dp"
-                    android:inputType="numberDecimal" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="2dp"
-                    android:background="@color/duo_border"
-                    android:layout_marginVertical="8dp"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Empty Distance (cm)"
-                    android:textColor="?android:textColorSecondary"
-                    android:textSize="12sp" />
-                <EditText
-                    android:id="@+id/editEmptyDist"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="e.g. 130"
-                    android:background="@null"
-                    android:paddingVertical="8dp"
-                    android:inputType="numberDecimal" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="2dp"
-                    android:background="@color/duo_border"
-                    android:layout_marginVertical="8dp"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Tank Volume (L)"
-                    android:textColor="?android:textColorSecondary"
-                    android:textSize="12sp" />
-                <EditText
-                    android:id="@+id/editVolume"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="e.g. 1000"
-                    android:background="@null"
-                    android:paddingVertical="8dp"
-                    android:inputType="number" />
-            </LinearLayout>
-
-            <!-- Appearance & Preferences Section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Appearance &amp; Preferences"
-                android:textColor="?colorSecondary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_duo_card"
-                android:orientation="vertical"
-                android:padding="16dp"
-                android:layout_marginBottom="24dp">
-
-                <!-- Vibration Toggle -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    <TextView
-                        android:layout_width="0dp"
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editUserName"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Vibration Feedback"
-                        android:textColor="?android:textColorPrimary"
-                        android:textSize="16sp" />
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchVibration"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/duo_border"
-                    android:layout_marginVertical="12dp"/>
-
-                <!-- Notifications Toggle -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Water Level Alerts"
-                        android:textColor="?android:textColorPrimary"
-                        android:textSize="16sp" />
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchNotifications"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/duo_border"
-                    android:layout_marginVertical="12dp"/>
-
-                <!-- Volume Units -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Volume Units"
-                    android:textColor="?android:textColorSecondary"
-                    android:textSize="12sp"
-                    android:layout_marginBottom="8dp"/>
-                
-                <RadioGroup
-                    android:id="@+id/radioGroupUnits"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    <RadioButton
-                        android:id="@+id/radioLiters"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Liters (L)"
-                        android:checked="true" />
-                    <RadioButton
-                        android:id="@+id/radioGallons"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Gallons (gal)" />
-                </RadioGroup>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/duo_border"
-                    android:layout_marginVertical="12dp"/>
-
-                <!-- Alert Threshold -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Low Level Alert Threshold"
-                        android:textColor="?android:textColorSecondary"
-                        android:textSize="12sp" />
-                    <TextView
-                        android:id="@+id/textThresholdValue"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="30%"
-                        android:textColor="?colorSecondary"
+                        android:inputType="textPersonName"
+                        android:textAlignment="center"
+                        android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <SeekBar
-                    android:id="@+id/seekbarThreshold"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="50"
-                    android:progress="30"
-                    android:layout_marginTop="8dp" />
-
+                        android:fontFamily="sans-serif-bold"/>
+                </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
+            <!-- Preferences Card -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PREFERENCES"
+                android:textColor="@color/duo_text_secondary"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="0.05"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="16dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/duo_border"
+                app:cardBackgroundColor="@color/surface_card"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Haptic Feedback -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Haptic Feedback"
+                                android:textColor="@color/duo_text_primary"
+                                android:textSize="16sp"
+                                android:fontFamily="sans-serif-bold"/>
+                        </LinearLayout>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchVibration"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:trackTint="@color/switch_track_selector"
+                            app:thumbTint="@color/white"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/duo_border_light"
+                        android:layout_marginHorizontal="16dp"/>
+
+                    <!-- Notifications -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Smart Alerts"
+                                android:textColor="@color/duo_text_primary"
+                                android:textSize="16sp"
+                                android:fontFamily="sans-serif-bold"/>
+                        </LinearLayout>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchNotifications"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:trackTint="@color/switch_track_selector"
+                            app:thumbTint="@color/white"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/duo_border_light"
+                        android:layout_marginHorizontal="16dp"/>
+
+                    <!-- Gyroscope Water -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Gyroscope Water"
+                                android:textColor="@color/duo_text_primary"
+                                android:textSize="16sp"
+                                android:fontFamily="sans-serif-bold"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Water reacts to phone tilt"
+                                android:textColor="@color/duo_text_secondary"
+                                android:textSize="12sp"/>
+                        </LinearLayout>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchGyroWater"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:trackTint="@color/switch_track_selector"
+                            app:thumbTint="@color/white"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/duo_border_light"
+                        android:layout_marginHorizontal="16dp"/>
+
+                    <!-- Unit Selection -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Volume Unit"
+                            android:textColor="@color/duo_text_primary"
+                            android:textSize="16sp"
+                            android:fontFamily="sans-serif-bold"
+                            android:layout_marginBottom="12dp"/>
+                        
+                        <RadioGroup
+                            android:id="@+id/radioGroupUnits"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:background="@drawable/bg_toggle_group"
+                            android:padding="4dp">
+                            <RadioButton
+                                android:id="@+id/radioLiters"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_weight="1"
+                                android:text="LITERS"
+                                android:gravity="center"
+                                android:button="@null"
+                                android:background="@drawable/selector_toggle_btn"
+                                android:textColor="@color/selector_toggle_text"
+                                android:textSize="14sp"
+                                android:fontFamily="sans-serif-black"/>
+                            <RadioButton
+                                android:id="@+id/radioGallons"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_weight="1"
+                                android:text="GALLONS"
+                                android:gravity="center"
+                                android:button="@null"
+                                android:background="@drawable/selector_toggle_btn"
+                                android:textColor="@color/selector_toggle_text"
+                                android:textSize="14sp"
+                                android:fontFamily="sans-serif-black"
+                                android:layout_marginStart="4dp"/>
+                        </RadioGroup>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Calibration Card -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CALIBRATION"
+                android:textColor="@color/duo_text_secondary"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="0.05"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="16dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/duo_border"
+                app:cardBackgroundColor="@color/surface_card"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/bg_warning_light"
+                        android:padding="12dp"
+                        android:layout_marginBottom="16dp"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_trend_arrow"
+                            app:tint="@color/brand_warning"
+                            android:rotation="0"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Advanced Configuration"
+                            android:textColor="@color/brand_warning"
+                            android:fontFamily="sans-serif-bold"
+                            android:layout_marginStart="8dp"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:baselineAligned="false"
+                        android:layout_marginBottom="12dp">
+                        
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Full (cm)"
+                            app:boxStrokeWidth="2dp"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginEnd="8dp">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/editFullDist"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal"
+                                android:fontFamily="sans-serif-medium"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Empty (cm)"
+                            app:boxStrokeWidth="2dp"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginStart="8dp">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/editEmptyDist"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal"
+                                android:fontFamily="sans-serif-medium"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+                    
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Total Volume (Liters)"
+                        app:boxStrokeWidth="2dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="24dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editVolume"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:fontFamily="sans-serif-medium"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Low Level Alert"
+                        android:textColor="@color/duo_text_secondary"
+                        android:fontFamily="sans-serif-bold"
+                        android:layout_marginBottom="12dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <SeekBar
+                            android:id="@+id/seekbarThreshold"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:max="50"
+                            android:progressTint="@color/duo_blue"
+                            android:thumbTint="@color/duo_blue"/>
+                        <TextView
+                            android:id="@+id/textThresholdValue"
+                            android:layout_width="50dp"
+                            android:layout_height="wrap_content"
+                            android:text="30%"
+                            android:gravity="end"
+                            android:fontFamily="sans-serif-black"
+                            android:textColor="@color/duo_blue"
+                            android:textSize="18sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Save Button -->
             <Button
                 android:id="@+id/saveButton"
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:text="Save Settings"
-                android:textAllCaps="true"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:background="@drawable/bg_duo_button_darker"
-                android:textColor="@android:color/white"
-                android:layout_marginBottom="16dp" />
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
+                android:text="SAVE CHANGES"
+                android:fontFamily="sans-serif-black"
+                android:textSize="16sp"
+                android:letterSpacing="0.05"
+                android:background="@drawable/bg_duo_button"
+                android:textColor="@color/white"
+                app:backgroundTint="@null"/>
 
         </LinearLayout>
     </ScrollView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

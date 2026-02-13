@@ -16,6 +16,7 @@
     
     <!-- Legacy Mappings (Dark) -->
     <color name="duo_blue">@color/brand_primary</color>
+    <color name="duo_blue_light">#303040</color> <!-- Darker blue tint for dark mode cards -->
     <color name="duo_blue_shadow">#1899D6</color>
     <color name="duo_green">@color/brand_success</color>
     <color name="duo_green_shadow">#5CB800</color>

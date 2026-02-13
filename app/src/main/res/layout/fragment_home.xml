@@ -81,10 +81,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="10dp" />
 
-            <LinearLayout
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
                 android:background="@drawable/bg_duo_card"
                 android:layout_marginHorizontal="20dp">
 
@@ -149,15 +148,35 @@
                             android:textSize="12sp"
                             android:fontFamily="sans-serif-black"
                             android:translationY="35dp" />
+
+                        <ImageView
+                            android:id="@+id/trendIndicator"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="50dp"
+                            android:elevation="10dp"
+                            android:src="@drawable/ic_trend_arrow"
+                            android:visibility="invisible"
+                            app:tint="@color/white" />
                     </FrameLayout>
                 </FrameLayout>
-            </LinearLayout>
 
-            <Space
+                <FrameLayout
+                    android:id="@+id/confettiContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="300dp"
+                    android:layout_gravity="top"
+                    android:elevation="20dp" />
+            </FrameLayout>
+
+
+                <Space
                 android:layout_width="match_parent"
                 android:layout_height="20dp" />
 
             <FrameLayout
+                android:id="@+id/usageCardContainer"
                 android:layout_width="match_parent"
                 android:layout_height="330dp"
                 android:layout_gravity="center_horizontal"
@@ -496,6 +515,7 @@
                 android:padding="5dp">
 
                 <LinearLayout
+                    android:id="@+id/capacityCard"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -536,6 +556,7 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/avgUsageCard"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_marginStart="12dp"

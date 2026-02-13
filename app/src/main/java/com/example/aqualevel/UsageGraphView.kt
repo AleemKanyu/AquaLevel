@@ -53,13 +53,32 @@ class UsageGraphView @JvmOverloads constructor(
 
     private var dataPoints: List<Float?> = emptyList()
 
+    // Animation properties
+    private val pathMeasure = PathMeasure()
+    private val drawnPath = Path()
+    private var animationProgress = 0f
+    private var animator: android.animation.ValueAnimator? = null
+
     /**
-     * Sets the hourly data points for the graph and triggers a redraw.
+     * Sets the hourly data points for the graph and triggers a redraw with animation.
      * @param points A list of 24 floating point values representing usage in Liters.
      */
     fun setData(points: List<Float?>) {
         dataPoints = points
-        invalidate()
+        startAnimation()
+    }
+
+    private fun startAnimation() {
+        animator?.cancel()
+        animator = android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 1500
+            interpolator = android.view.animation.DecelerateInterpolator()
+            addUpdateListener {
+                animationProgress = it.animatedValue as Float
+                invalidate()
+            }
+            start()
+        }
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -149,12 +168,22 @@ class UsageGraphView @JvmOverloads constructor(
             fillPath.cubicTo(cp1X, cp1Y, cp2X, cp2Y, p2.x, p2.y)
         }
         
-        // Finalize fill path
+        // Finalize fill path (only for full path logic, but let's animate fill too if possible, or just fade it)
+        // For simplicity, let's just animate the stroke line for now to keep it clean.
+        // Actually, animating fill is tricky. Let's just draw the full fill with alpha animation?
+        // Or keep fill static. Let's try to animate the line path.
+
+        pathMeasure.setPath(path, false)
+        drawnPath.reset()
+        pathMeasure.getSegment(0f, pathMeasure.length * animationProgress, drawnPath, true)
+
+        // Draw fill with alpha based on progress
+        fillPaint.alpha = (255 * animationProgress).toInt().coerceIn(0, 255)
         fillPath.lineTo(points.last().x, h - paddingBottom)
         fillPath.close()
 
         canvas.drawPath(fillPath, fillPaint)
-        canvas.drawPath(path, linePaint)
+        canvas.drawPath(drawnPath, linePaint)
 
         // Draw labels and highlight data points
         textPaint.textAlign = Paint.Align.CENTER
@@ -166,8 +195,12 @@ class UsageGraphView @JvmOverloads constructor(
             }
             
             if (originalVal != null && originalVal > 0) {
-                canvas.drawCircle(p.x, p.y, 8f, dotPaint)
-                canvas.drawCircle(p.x, p.y, 8f, dotStrokePaint)
+                // Only show dots if the line has reached them
+                val pointProgress = (i.toFloat() / (points.size - 1))
+                if (animationProgress >= pointProgress) {
+                    canvas.drawCircle(p.x, p.y, 8f, dotPaint)
+                    canvas.drawCircle(p.x, p.y, 8f, dotStrokePaint)
+                }
             }
         }
     }

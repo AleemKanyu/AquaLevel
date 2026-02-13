@@ -42,7 +42,7 @@ class CardBackgroundView @JvmOverloads constructor(
                 Role.TANK_LEVEL -> 5000L
                 Role.DAILY_USAGE -> 3000L
                 Role.HOURLY_AVG -> 2000L
-                Role.EST_TIME -> 4000L
+                Role.EST_TIME -> 30000L
             }
             repeatCount = ValueAnimator.INFINITE
             interpolator = LinearInterpolator()
@@ -73,7 +73,7 @@ class CardBackgroundView @JvmOverloads constructor(
             Role.TANK_LEVEL -> drawWave(canvas, w, h)
             Role.DAILY_USAGE -> drawDroplets(canvas, w, h)
             Role.HOURLY_AVG -> drawPulses(canvas, w, h)
-            Role.EST_TIME -> drawGlow(canvas, w, h)
+            Role.EST_TIME -> drawClock(canvas, w, h)
         }
     }
 
@@ -130,19 +130,36 @@ class CardBackgroundView @JvmOverloads constructor(
         paint.style = Paint.Style.FILL
     }
 
-    private fun drawGlow(canvas: Canvas, w: Float, h: Float) {
+    private fun drawClock(canvas: Canvas, w: Float, h: Float) {
         paint.color = secondaryColor
-        val glowProgress = Math.abs(Math.sin(animationValue * Math.PI)).toFloat()
-        paint.alpha = (10 + 20 * glowProgress).toInt()
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 3f
         
-        val gradient = RadialGradient(
-            w * 0.5f, h * 0.5f, w * 0.8f,
-            intArrayOf(secondaryColor, Color.TRANSPARENT),
-            null, Shader.TileMode.CLAMP
-        )
-        paint.shader = gradient
-        canvas.drawRect(0f, 0f, w, h, paint)
-        paint.shader = null
+        val radius = Math.min(w, h) * 0.35f
+        val cx = w * 0.75f
+        val cy = h * 0.5f
+
+        // Draw clock face
+        paint.alpha = 20
+        canvas.drawCircle(cx, cy, radius, paint)
+
+        // Draw hour hand
+        val hourRotation = animationValue * 2 * Math.PI.toFloat()
+        val hx = cx + radius * 0.5f * Math.sin(hourRotation.toDouble()).toFloat()
+        val hy = cy - radius * 0.5f * Math.cos(hourRotation.toDouble()).toFloat()
+        paint.alpha = 40
+        paint.strokeWidth = 5f
+        canvas.drawLine(cx, cy, hx, hy, paint)
+
+        // Draw minute hand
+        val minRotation = animationValue * 12 * 2 * Math.PI.toFloat()
+        val mx = cx + radius * 0.8f * Math.sin(minRotation.toDouble()).toFloat()
+        val my = cy - radius * 0.8f * Math.cos(minRotation.toDouble()).toFloat()
+        paint.alpha = 30
+        paint.strokeWidth = 3f
+        canvas.drawLine(cx, cy, mx, my, paint)
+
+        paint.style = Paint.Style.FILL
     }
 
     override fun onDetachedFromWindow() {

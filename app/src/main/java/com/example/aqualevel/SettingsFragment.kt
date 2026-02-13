@@ -9,15 +9,17 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.example.aqualevel.WaveView
 
 class SettingsFragment : Fragment() {
 
-    private lateinit var editUserName: EditText
-    private lateinit var editFullDist: EditText
-    private lateinit var editEmptyDist: EditText
-    private lateinit var editVolume: EditText
+    private lateinit var editUserName: com.google.android.material.textfield.TextInputEditText
+    private lateinit var editFullDist: com.google.android.material.textfield.TextInputEditText
+    private lateinit var editEmptyDist: com.google.android.material.textfield.TextInputEditText
+    private lateinit var editVolume: com.google.android.material.textfield.TextInputEditText
     private lateinit var switchVibration: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var switchNotifications: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var switchGyroWater: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var radioGroupUnits: android.widget.RadioGroup
     private lateinit var seekbarThreshold: android.widget.SeekBar
     private lateinit var textThresholdValue: android.widget.TextView
@@ -36,10 +38,17 @@ class SettingsFragment : Fragment() {
         editVolume = view.findViewById(R.id.editVolume)
         switchVibration = view.findViewById(R.id.switchVibration)
         switchNotifications = view.findViewById(R.id.switchNotifications)
+        switchGyroWater = view.findViewById(R.id.switchGyroWater)
         radioGroupUnits = view.findViewById(R.id.radioGroupUnits)
         seekbarThreshold = view.findViewById(R.id.seekbarThreshold)
         textThresholdValue = view.findViewById(R.id.textThresholdValue)
         saveButton = view.findViewById(R.id.saveButton)
+        
+        // Initialize Profile Wave Animation
+        val profileWaveView = view.findViewById<WaveView>(R.id.profileWaveView)
+        view.postDelayed({
+            profileWaveView.setWaterLevel(50) // Set a static 50% for aesthetic effect
+        }, 500)
 
         seekbarThreshold.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
@@ -76,6 +85,8 @@ class SettingsFragment : Fragment() {
         editVolume.setText(volume.toString())
         switchVibration.isChecked = vibrationEnabled
         switchNotifications.isChecked = notificationsEnabled
+        val gyroWaterEnabled = sharedPref.getBoolean("gyro_water_enabled", false)
+        switchGyroWater.isChecked = gyroWaterEnabled
         if (unit == "gal") {
             view?.findViewById<android.widget.RadioButton>(R.id.radioGallons)?.isChecked = true
         } else {
@@ -95,6 +106,7 @@ class SettingsFragment : Fragment() {
         
         val vibrationEnabled = switchVibration.isChecked
         val notificationsEnabled = switchNotifications.isChecked
+        val gyroWaterEnabled = switchGyroWater.isChecked
         val unit = if (radioGroupUnits.checkedRadioButtonId == R.id.radioGallons) "gal" else "L"
         val threshold = seekbarThreshold.progress
 
@@ -114,6 +126,7 @@ class SettingsFragment : Fragment() {
         sharedPref.putInt("tank_volume", volume)
         sharedPref.putBoolean("vibration_enabled", vibrationEnabled)
         sharedPref.putBoolean("notifications_enabled", notificationsEnabled)
+        sharedPref.putBoolean("gyro_water_enabled", gyroWaterEnabled)
         sharedPref.putString("volume_unit", unit)
         sharedPref.putInt("alert_threshold", threshold)
         sharedPref.apply()
