@@ -60,14 +60,48 @@ internal fun updateAppWidget(
         val volume = prefs.getInt("last_volume", 0)
         val timestamp = prefs.getLong("last_update_timestamp", System.currentTimeMillis())
 
+        // Widget Settings
+        val showPercentage = prefs.getBoolean("widget_show_percentage", true)
+        val showVolume = prefs.getBoolean("widget_show_volume", true)
+        val showTimestamp = prefs.getBoolean("widget_show_timestamp", true)
+        val widgetTheme = prefs.getString("widget_theme", "dark")
+
         val views = RemoteViews(context.packageName, R.layout.widget_water_level)
+        
+        // Apply Theme
+        val isDarkTheme = widgetTheme == "dark"
+        if (isDarkTheme) {
+            views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.bg_widget_simple_dark)
+            
+            // White/Light Text for Dark Theme
+            views.setTextColor(R.id.widget_percentage, android.graphics.Color.WHITE)
+            views.setTextColor(R.id.widget_percentage_symbol, android.graphics.Color.WHITE)
+            views.setTextColor(R.id.widget_capacity, 0xFFDDDDDD.toInt()) // Light Grey
+            views.setTextColor(R.id.widget_timestamp, 0xFFBBBBBB.toInt()) // Lighter Grey
+             
+        } else {
+            // Light Theme
+            views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.bg_widget_simple_light)
+            
+            // Dark Text for Light Theme
+            val darkColor = androidx.core.content.ContextCompat.getColor(context, R.color.duo_text_primary)
+            val secondaryColor = androidx.core.content.ContextCompat.getColor(context, R.color.duo_text_secondary)
+            val actionColor = androidx.core.content.ContextCompat.getColor(context, R.color.duo_blue)
+
+            views.setTextColor(R.id.widget_percentage, actionColor)
+            views.setTextColor(R.id.widget_percentage_symbol, actionColor)
+            views.setTextColor(R.id.widget_capacity, secondaryColor)
+            views.setTextColor(R.id.widget_timestamp, secondaryColor)
+        }
         
         // Update UI components
         views.setTextViewText(R.id.widget_percentage, percentage.toString())
         views.setTextViewText(R.id.widget_capacity, "$volume L")
         
-        // Removed setColorFilter as it can cause crashes/failures on some Android versions 
-        // using non-remotable methods in RemoteViews.
+        // Visibility Logic
+        views.setViewVisibility(R.id.widget_percentage_container, if (showPercentage) android.view.View.VISIBLE else android.view.View.GONE)
+        views.setViewVisibility(R.id.widget_capacity, if (showVolume) android.view.View.VISIBLE else android.view.View.GONE)
+        views.setViewVisibility(R.id.widget_timestamp, if (showTimestamp) android.view.View.VISIBLE else android.view.View.GONE)
         
         val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
         views.setTextViewText(R.id.widget_timestamp, sdf.format(Date(timestamp)))
@@ -77,7 +111,7 @@ internal fun updateAppWidget(
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
         // Instruct the widget manager to update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views)

@@ -51,6 +51,11 @@ class WaveView @JvmOverloads constructor(
     private var progress: Float = 0f   // 0.0 to 1.0
     private var targetWaterHeight = 0f
 
+
+    // --- Performance Mode ---
+    private var animationEnabled = true
+    private var performanceMode = false
+
     // --- Animation ---
     private var animator: ValueAnimator? = null
     private var animTime = 0f
@@ -94,8 +99,16 @@ class WaveView @JvmOverloads constructor(
         }
     }
 
-    // --- Public API ---
     fun setGyroEnabled(enabled: Boolean) {
+        // In performance mode, we ignore gyro enablement to save battery/cpu
+        if (performanceMode) {
+            gyroUserEnabled = false
+            unregisterSensor()
+            rawTiltX = 0f
+            rawTiltY = 0f
+            return
+        }
+        
         gyroUserEnabled = enabled
         if (enabled) {
             registerSensor()
@@ -103,6 +116,25 @@ class WaveView @JvmOverloads constructor(
             unregisterSensor()
             rawTiltX = 0f
             rawTiltY = 0f
+        }
+    }
+
+    fun setPerformanceConfiguration(disableAnimation: Boolean, perfMode: Boolean) {
+        this.animationEnabled = !disableAnimation
+        this.performanceMode = perfMode
+        
+        if (!animationEnabled || performanceMode) {
+            animator?.cancel()
+            // If we just disabled animation, we might want to ensure a redraw happens once to settle
+            if (performanceMode) {
+                // Force gyro off in performance mode
+                setGyroEnabled(false) 
+            }
+            invalidate()
+        } else {
+            // Re-enable if currently disabled but should be on
+            if (width > 0) startAnimation()
+            if (gyroUserEnabled) registerSensor()
         }
     }
 
@@ -343,12 +375,14 @@ class WaveView @JvmOverloads constructor(
         drawShimmer(canvas, w, h, columnWidth)
 
         // --- Bubbles ---
-        var minSurface = h
-        for (i in 0 until NUM_COLUMNS) {
-            val sy = h - columns[i]
-            if (sy < minSurface) minSurface = sy
+        if (!performanceMode) {
+            var minSurface = h
+            for (i in 0 until NUM_COLUMNS) {
+                val sy = h - columns[i]
+                if (sy < minSurface) minSurface = sy
+            }
+            drawBubbles(canvas, w, h, minSurface)
         }
-        drawBubbles(canvas, w, h, minSurface)
     }
 
     private fun drawWaterSurface(
@@ -360,20 +394,32 @@ class WaveView @JvmOverloads constructor(
 
         wavePath.moveTo(0f, h)  // bottom-left
 
+        // Optimization: In performance mode, draw simple flat water line
+        if (performanceMode) {
+             val surfaceY = h - targetWaterHeight + yOffset
+             wavePath.lineTo(0f, surfaceY)
+             wavePath.lineTo(w, surfaceY)
+             wavePath.lineTo(w, h)
+             wavePath.close()
+             canvas.drawPath(wavePath, waterPaint)
+             return
+        }
+
         for (i in 0 until NUM_COLUMNS) {
             val x = i * colW
             val surfaceY = h - columns[i] + yOffset
             // Add small animated ripple for organic look
-            val ripple = sin(
+            val ripple = if (animationEnabled) sin(
                 (waveFreq * 2.0 * PI * i / NUM_COLUMNS) + animTime.toDouble()
-            ).toFloat() * waveAmp
+            ).toFloat() * waveAmp else 0f
+            
             wavePath.lineTo(x, surfaceY + ripple)
         }
         // Last column edge
         val lastSurface = h - columns[NUM_COLUMNS - 1] + yOffset
-        val lastRipple = sin(
+        val lastRipple = if (animationEnabled) sin(
             (waveFreq * 2.0 * PI) + animTime.toDouble()
-        ).toFloat() * waveAmp
+        ).toFloat() * waveAmp else 0f
         wavePath.lineTo(w, lastSurface + lastRipple)
 
         wavePath.lineTo(w, h)  // bottom-right
@@ -383,8 +429,11 @@ class WaveView @JvmOverloads constructor(
     }
 
     private fun drawShimmer(canvas: Canvas, w: Float, h: Float, colW: Float) {
+        if (performanceMode || !animationEnabled) return // Skip shimmer if animation disabled
+        
         shimmerPaint.alpha = 25
         shimmerPaint.strokeWidth = 2.5f
+
         shimmerPaint.style = Paint.Style.STROKE
 
         val path = Path()
@@ -427,6 +476,7 @@ class WaveView @JvmOverloads constructor(
 
     // --- Animation ---
     private fun startAnimation() {
+        if (!animationEnabled) return // Don't start if disabled
         if (animator?.isRunning == true) return
         animator = ValueAnimator.ofFloat(0f, (2 * PI).toFloat()).apply {
             duration = 5000

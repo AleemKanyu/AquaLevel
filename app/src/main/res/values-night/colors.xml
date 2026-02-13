@@ -28,6 +28,7 @@
     <color name="duo_teal_shadow">#1FA394</color>
     <color name="duo_border">@color/border_color</color>
     <color name="duo_card_bg">@color/surface_card</color>
+    <color name="duo_card_shadow">#000000</color>
     <color name="duo_text_primary">@color/text_primary</color>
     <color name="duo_text_secondary">@color/text_secondary</color>
 

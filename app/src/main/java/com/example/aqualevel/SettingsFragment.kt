@@ -20,9 +20,15 @@ class SettingsFragment : Fragment() {
     private lateinit var switchVibration: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var switchNotifications: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var switchGyroWater: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var switchDisableAnimation: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var switchPerformanceMode: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var radioGroupUnits: android.widget.RadioGroup
     private lateinit var seekbarThreshold: android.widget.SeekBar
     private lateinit var textThresholdValue: android.widget.TextView
+    private lateinit var switchWidgetPercentage: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var switchWidgetVolume: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var switchWidgetTimestamp: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var radioGroupWidgetTheme: android.widget.RadioGroup
     private lateinit var saveButton: Button
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -39,6 +45,15 @@ class SettingsFragment : Fragment() {
         switchVibration = view.findViewById(R.id.switchVibration)
         switchNotifications = view.findViewById(R.id.switchNotifications)
         switchGyroWater = view.findViewById(R.id.switchGyroWater)
+        switchDisableAnimation = view.findViewById(R.id.switchDisableAnimation)
+        switchPerformanceMode = view.findViewById(R.id.switchPerformanceMode)
+        
+        switchWidgetPercentage = view.findViewById(R.id.switchWidgetPercentage)
+        switchWidgetVolume = view.findViewById(R.id.switchWidgetVolume)
+        switchWidgetTimestamp = view.findViewById(R.id.switchWidgetTimestamp)
+        
+        radioGroupWidgetTheme = view.findViewById(R.id.radioGroupWidgetTheme)
+        
         radioGroupUnits = view.findViewById(R.id.radioGroupUnits)
         seekbarThreshold = view.findViewById(R.id.seekbarThreshold)
         textThresholdValue = view.findViewById(R.id.textThresholdValue)
@@ -87,6 +102,21 @@ class SettingsFragment : Fragment() {
         switchNotifications.isChecked = notificationsEnabled
         val gyroWaterEnabled = sharedPref.getBoolean("gyro_water_enabled", false)
         switchGyroWater.isChecked = gyroWaterEnabled
+        
+        switchDisableAnimation.isChecked = sharedPref.getBoolean("disable_animation", false)
+        switchPerformanceMode.isChecked = sharedPref.getBoolean("performance_mode", false)
+
+        switchWidgetPercentage.isChecked = sharedPref.getBoolean("widget_show_percentage", true)
+        switchWidgetVolume.isChecked = sharedPref.getBoolean("widget_show_volume", true)
+        switchWidgetTimestamp.isChecked = sharedPref.getBoolean("widget_show_timestamp", true)
+        
+        val widgetTheme = sharedPref.getString("widget_theme", "dark")
+        if (widgetTheme == "light") {
+            view?.findViewById<android.widget.RadioButton>(R.id.radioWidgetLight)?.isChecked = true
+        } else {
+            view?.findViewById<android.widget.RadioButton>(R.id.radioWidgetDark)?.isChecked = true
+        }
+
         if (unit == "gal") {
             view?.findViewById<android.widget.RadioButton>(R.id.radioGallons)?.isChecked = true
         } else {
@@ -107,6 +137,8 @@ class SettingsFragment : Fragment() {
         val vibrationEnabled = switchVibration.isChecked
         val notificationsEnabled = switchNotifications.isChecked
         val gyroWaterEnabled = switchGyroWater.isChecked
+        val disableAnimation = switchDisableAnimation.isChecked
+        val performanceMode = switchPerformanceMode.isChecked
         val unit = if (radioGroupUnits.checkedRadioButtonId == R.id.radioGallons) "gal" else "L"
         val threshold = seekbarThreshold.progress
 
@@ -127,11 +159,29 @@ class SettingsFragment : Fragment() {
         sharedPref.putBoolean("vibration_enabled", vibrationEnabled)
         sharedPref.putBoolean("notifications_enabled", notificationsEnabled)
         sharedPref.putBoolean("gyro_water_enabled", gyroWaterEnabled)
+        sharedPref.putBoolean("disable_animation", disableAnimation)
+        sharedPref.putBoolean("performance_mode", performanceMode)
+        
+        sharedPref.putBoolean("widget_show_percentage", switchWidgetPercentage.isChecked)
+        sharedPref.putBoolean("widget_show_volume", switchWidgetVolume.isChecked)
+        sharedPref.putBoolean("widget_show_timestamp", switchWidgetTimestamp.isChecked)
+        
+        val widgetTheme = if (radioGroupWidgetTheme.checkedRadioButtonId == R.id.radioWidgetLight) "light" else "dark"
+        sharedPref.putString("widget_theme", widgetTheme)
+        
         sharedPref.putString("volume_unit", unit)
         sharedPref.putInt("alert_threshold", threshold)
         sharedPref.apply()
 
         Toast.makeText(requireContext(), "Settings saved", Toast.LENGTH_SHORT).show()
+        
+        // Trigger widget update
+        val intent = android.content.Intent(requireContext(), WaterLevelWidget::class.java)
+        intent.action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
+        val ids = android.appwidget.AppWidgetManager.getInstance(requireContext())
+            .getAppWidgetIds(android.content.ComponentName(requireContext(), WaterLevelWidget::class.java))
+        intent.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+        requireContext().sendBroadcast(intent)
     }
 
     private fun performHapticFeedbackCommon(view: View) {

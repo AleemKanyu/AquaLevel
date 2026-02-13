@@ -63,15 +63,20 @@ class MainActivity : AppCompatActivity() {
 
         themeToggle.setOnClickListener {
             performHapticFeedbackCommon(it)
-            applyClickAnimation(themeIcon) {
-                val isDark = sharedPref.getBoolean("is_dark_mode", false)
-                val newMode = !isDark
-                sharedPref.edit().putBoolean("is_dark_mode", newMode).apply()
-                
+            // Animate only the icon but don't wait for it
+            applyClickAnimation(themeIcon) { } 
+            
+            // Execute logic immediately
+            val isDark = sharedPref.getBoolean("is_dark_mode", false)
+            val newMode = !isDark
+            sharedPref.edit().putBoolean("is_dark_mode", newMode).apply()
+            
+            // Small delay to allow the ripple/touch feedback to be seen before recreation
+            it.postDelayed({
                 AppCompatDelegate.setDefaultNightMode(
                     if (newMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
                 )
-            }
+            }, 50) 
         }
 
         setupNavigation(savedInstanceState == null)

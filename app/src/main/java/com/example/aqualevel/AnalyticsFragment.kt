@@ -33,6 +33,12 @@ class AnalyticsFragment : Fragment() {
     private var tankVolume = 2000.0
     private var volumeUnit = "L"
     private val displayMultiplier = 1 
+    
+    // Animation State
+    private var lastPercent = 0
+    private var lastDailyUsage = 0
+    private var lastHourlyAvg = 0.0
+    private var lastDaysLeft = 0 
 
     private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _: SharedPreferences, key: String? ->
         if (key == "volume_unit" || key == "full_distance" || key == "empty_distance" || key == "tank_volume") {
@@ -126,88 +132,105 @@ class AnalyticsFragment : Fragment() {
 
         val viewModel = ViewModelProvider(requireActivity())[ReadingViewModel::class.java]
 
-        val updateUI = { readings: List<Readings> ->
-            if (readings.isNotEmpty()) {
-                val latest = readings.first()
-                val clampedLatest = latest.level.coerceIn(fullDistance, emptyDistance)
-                val currentPercent = (((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * 100).toInt()
-                percentageText.animateCountUp(currentPercent, 0, 1000)
-
-                // Add subtle pulse if level is low (< 30%)
-                if (currentPercent < 30) {
-                    if (percentageText.animation == null) {
-                        percentageText.animate()
-                            .scaleX(1.1f)
-                            .scaleY(1.1f)
-                            .setDuration(1000)
-                            .setInterpolator(android.view.animation.CycleInterpolator(1f))
-                            .withEndAction { 
-                                if (isAdded && percentageText.text.toString().toIntOrNull() ?: 100 < 30) {
-                                    // Restart if still low
-                                    percentageText.alpha = 1f // Dummy change to allow restart or just call again
-                                    // Actually, a Repeatable animator would be better, but let's keep it simple
-                                }
-                            }
-                            .start()
-                    }
-                } else {
-                    percentageText.animate().cancel()
-                    percentageText.scaleX = 1f
-                    percentageText.scaleY = 1f
-                }
-
-                val todayReadings = readings.filter { isSameDay(it.timestamp, System.currentTimeMillis()) }
-
-                if (todayReadings.size >= 2) {
-                    val minDist = todayReadings.minOf { it.level }
-                    val maxDist = todayReadings.maxOf { it.level }
-                    val usedDist = (maxDist - minDist).coerceAtLeast(0.0)
-                    val totalDistRange = emptyDistance - fullDistance
-                    val usedVolume = (usedDist / totalDistRange) * tankVolume * displayMultiplier
-                    if (volumeUnit == "gal") {
-                        val galVal = usedVolume * 0.264172
-                        dailyUsageText.animateCountUp(galVal.toInt(), 0, 1000)
-                        view.findViewById<TextView>(R.id.dailyUsageUnit).text = "gal"
-                    } else {
-                        dailyUsageText.animateCountUp(usedVolume.toInt(), 0, 1000)
-                        view.findViewById<TextView>(R.id.dailyUsageUnit).text = "L"
-                    }
-                } else {
-                    dailyUsageText.text = "0"
-                }
-
-                val avgDailyUsageVolume = calculateAverageDailyUsage(readings)
-                val hourlyAvg = if (avgDailyUsageVolume > 0) avgDailyUsageVolume / 24 else 0.0
-                
-                if (volumeUnit == "gal") {
-                    val galVal = hourlyAvg * 0.264172
-                    hourlyAvgText.animateCountUp(galVal.toInt(), 0, 1000)
-                    view.findViewById<TextView>(R.id.hourlyAvgUnit).text = "gal/h"
-                } else {
-                    hourlyAvgText.animateCountUp(hourlyAvg.toInt(), 0, 1000)
-                    view.findViewById<TextView>(R.id.hourlyAvgUnit).text = "L/h"
-                }
-
-                if (avgDailyUsageVolume > 0) {
-                    val currentVolume = ((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * tankVolume * displayMultiplier
-                    val daysLeft = (currentVolume / avgDailyUsageVolume)
-                    daysLeftText.animateCountUp(daysLeft.toInt(), 0, 1000)
-                } else {
-                    daysLeftText.text = "--"
-                }
-
-                updateHourlyGraph(todayReadings)
-            }
-        }
-
         viewModel.allReadings.observe(viewLifecycleOwner) { readings ->
-            updateUI(readings)
+            displayReadings(readings)
         }
 
         viewModel.refreshTrigger.observe(viewLifecycleOwner) {
-            viewModel.allReadings.value?.let { updateUI(it) }
+            viewModel.allReadings.value?.let { displayReadings(it) }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        // Force animation on resume (which happens when switching back to this tab)
+        val viewModel = ViewModelProvider(requireActivity())[ReadingViewModel::class.java]
+        viewModel.allReadings.value?.let { 
+             displayReadings(it)
+        }
+    }
+
+    private fun displayReadings(readings: List<Readings>) {
+        if (readings.isNotEmpty()) {
+            val latest = readings.first()
+            val clampedLatest = latest.level.coerceIn(fullDistance, emptyDistance)
+            val currentPercent = (((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * 100).toInt()
+            
+            // Force animation from 0 every time
+            percentageText.animateCountUp(currentPercent, 0, 1000)
+            lastPercent = currentPercent
+
+            // Add subtle pulse if level is low (< 30%)
+            if (currentPercent < 30) {
+                if (percentageText.animation == null) {
+                    percentageText.animate()
+                        .scaleX(1.1f)
+                        .scaleY(1.1f)
+                        .setDuration(1000)
+                        .setInterpolator(android.view.animation.CycleInterpolator(1f))
+                        .withEndAction { 
+                            if (isAdded && percentageText.text.toString().toIntOrNull() ?: 100 < 30) {
+                                // Restart if still low
+                                percentageText.alpha = 1f 
+                            }
+                        }
+                        .start()
+                }
+            } else {
+                percentageText.animate().cancel()
+                percentageText.scaleX = 1f
+                percentageText.scaleY = 1f
+            }
+
+            val todayReadings = readings.filter { isSameDay(it.timestamp, System.currentTimeMillis()) }
+
+            if (todayReadings.size >= 2) {
+                val minDist = todayReadings.minOf { it.level }
+                val maxDist = todayReadings.maxOf { it.level }
+                val usedDist = (maxDist - minDist).coerceAtLeast(0.0)
+                val totalDistRange = emptyDistance - fullDistance
+                val usedVolume = (usedDist / totalDistRange) * tankVolume * displayMultiplier
+                if (volumeUnit == "gal") {
+                    val galVal = usedVolume * 0.264172
+                    dailyUsageText.animateCountUp(galVal.toInt(), 0, 1000)
+                    view?.findViewById<TextView>(R.id.dailyUsageUnit)?.text = "gal"
+                } else {
+                    dailyUsageText.animateCountUp(usedVolume.toInt(), 0, 1000)
+                    view?.findViewById<TextView>(R.id.dailyUsageUnit)?.text = "L"
+                }
+                lastDailyUsage = usedVolume.toInt()
+            } else {
+                dailyUsageText.text = "0"
+            }
+
+            val avgDailyUsageVolume = calculateAverageDailyUsage(readings)
+            val hourlyAvg = if (avgDailyUsageVolume > 0) avgDailyUsageVolume / 24 else 0.0
+            
+            
+            if (volumeUnit == "gal") {
+                val galVal = hourlyAvg * 0.264172
+                hourlyAvgText.animateCountUp(galVal.toInt(), 0, 1000)
+                view?.findViewById<TextView>(R.id.hourlyAvgUnit)?.text = "gal/h"
+            } else {
+                hourlyAvgText.animateCountUp(hourlyAvg.toInt(), 0, 1000)
+                view?.findViewById<TextView>(R.id.hourlyAvgUnit)?.text = "L/h"
+            }
+            lastHourlyAvg = hourlyAvg
+
+            if (avgDailyUsageVolume > 0) {
+                val currentVolume = ((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * tankVolume * displayMultiplier
+                val daysLeft = (currentVolume / avgDailyUsageVolume)
+                daysLeftText.animateCountUp(daysLeft.toInt(), 0, 1000)
+                lastDaysLeft = daysLeft.toInt()
+            } else {
+                daysLeftText.text = "--"
+            }
+
+            updateHourlyGraph(todayReadings)
+        }
+    }
+
+
 
     private fun updateHourlyGraph(todayReadings: List<Readings>) {
         val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)

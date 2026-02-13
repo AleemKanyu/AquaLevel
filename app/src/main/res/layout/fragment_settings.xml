@@ -215,11 +215,93 @@
                             app:thumbTint="@color/white"/>
                     </LinearLayout>
 
+
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="2dp"
                         android:background="@color/duo_border_light"
                         android:layout_marginHorizontal="16dp"/>
+
+                    <!-- Disable Animation -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Disable Tank Animation"
+                                android:textColor="@color/duo_text_primary"
+                                android:textSize="16sp"
+                                android:fontFamily="sans-serif-bold"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Reduces battery usage"
+                                android:textColor="@color/duo_text_secondary"
+                                android:textSize="12sp"/>
+                        </LinearLayout>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchDisableAnimation"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:trackTint="@color/switch_track_selector"
+                            app:thumbTint="@color/white"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/duo_border_light"
+                        android:layout_marginHorizontal="16dp"/>
+
+                    <!-- Performance Mode -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Performance Mode"
+                                android:textColor="@color/duo_text_primary"
+                                android:textSize="16sp"
+                                android:fontFamily="sans-serif-bold"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Optimized for low-end devices"
+                                android:textColor="@color/duo_text_secondary"
+                                android:textSize="12sp"/>
+                        </LinearLayout>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchPerformanceMode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:trackTint="@color/switch_track_selector"
+                            app:thumbTint="@color/white"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/duo_border_light"
+                        android:layout_marginHorizontal="16dp"/>
+
 
                     <!-- Unit Selection -->
                     <LinearLayout
@@ -270,6 +352,173 @@
                                 android:layout_marginStart="4dp"/>
                         </RadioGroup>
                     </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- WIDGET SETTINGS -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WIDGET CUSTOMIZATION"
+                android:textColor="@color/duo_text_secondary"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="0.05"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="16dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/duo_border"
+                app:cardBackgroundColor="@color/surface_card"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Widget Theme Selector -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Widget Theme"
+                            android:textColor="@color/duo_text_primary"
+                            android:textSize="16sp"
+                            android:fontFamily="sans-serif-bold"
+                            android:layout_marginBottom="12dp"/>
+                        
+                        <RadioGroup
+                            android:id="@+id/radioGroupWidgetTheme"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:background="@drawable/bg_toggle_group"
+                            android:padding="4dp">
+                            <RadioButton
+                                android:id="@+id/radioWidgetLight"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_weight="1"
+                                android:text="LIGHT"
+                                android:gravity="center"
+                                android:button="@null"
+                                android:background="@drawable/selector_toggle_btn"
+                                android:textColor="@color/selector_toggle_text"
+                                android:textSize="14sp"
+                                android:fontFamily="sans-serif-black"/>
+                            <RadioButton
+                                android:id="@+id/radioWidgetDark"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_weight="1"
+                                android:text="DARK"
+                                android:gravity="center"
+                                android:button="@null"
+                                android:background="@drawable/selector_toggle_btn"
+                                android:textColor="@color/selector_toggle_text"
+                                android:textSize="14sp"
+                                android:fontFamily="sans-serif-black"
+                                android:layout_marginStart="4dp"/>
+                        </RadioGroup>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/duo_border_light"
+                        android:layout_marginHorizontal="16dp"/>
+
+                    <!-- Show Percentage -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Show Percentage"
+                            android:textColor="@color/duo_text_primary"
+                            android:textSize="16sp"
+                            android:fontFamily="sans-serif-bold"/>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchWidgetPercentage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:trackTint="@color/switch_track_selector"
+                            app:thumbTint="@color/white"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/duo_border_light"
+                        android:layout_marginHorizontal="16dp"/>
+
+                    <!-- Show Volume -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Show Volume"
+                            android:textColor="@color/duo_text_primary"
+                            android:textSize="16sp"
+                            android:fontFamily="sans-serif-bold"/>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchWidgetVolume"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:trackTint="@color/switch_track_selector"
+                            app:thumbTint="@color/white"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/duo_border_light"
+                        android:layout_marginHorizontal="16dp"/>
+
+                    <!-- Show Timestamp -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Show Timestamp"
+                            android:textColor="@color/duo_text_primary"
+                            android:textSize="16sp"
+                            android:fontFamily="sans-serif-bold"/>
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchWidgetTimestamp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:trackTint="@color/switch_track_selector"
+                            app:thumbTint="@color/white"/>
+                    </LinearLayout>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

@@ -123,7 +123,12 @@ class HomeFragment : Fragment() {
         // Apply gyro water preference
         val prefs = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
         val gyroEnabled = prefs.getBoolean("gyro_water_enabled", false)
-        waterLevel.setGyroEnabled(gyroEnabled)
+        val disableAnimation = prefs.getBoolean("disable_animation", false)
+        val performanceMode = prefs.getBoolean("performance_mode", false)
+        
+        waterLevel.setPerformanceConfiguration(disableAnimation, performanceMode)
+        waterLevel.setGyroEnabled(gyroEnabled) // Set this *after* perf config to ensure precedence logic handles it
+
         
         tankContainer = view.findViewById(R.id.tankContainer)
         trendIndicator = view.findViewById(R.id.trendIndicator)
@@ -360,14 +365,23 @@ class HomeFragment : Fragment() {
             
             lastDisplayedValue = value
             lastDisplayedPercent = safePercent.toInt()
-            // Animate water level
-            if (isFirstLoad) {
-                // First load: Animate from 0 to current
-                animateWaterLevel(0, safePercent.toInt(), 2000)
-                isFirstLoad = false
+            val prefs = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+            val disableAnimation = prefs.getBoolean("disable_animation", false)
+            val performanceMode = prefs.getBoolean("performance_mode", false)
+
+            if (disableAnimation || performanceMode) {
+                // Skip animation, set directly
+                waterLevel.setWaterLevel(safePercent.toInt())
             } else {
-                // Update: Animate from last to current
-                animateWaterLevel(lastDisplayedPercent, safePercent.toInt(), 1000)
+                // Animate water level
+                if (isFirstLoad) {
+                    // First load: Animate from 0 to current
+                    animateWaterLevel(0, safePercent.toInt(), 2000)
+                    isFirstLoad = false
+                } else {
+                    // Update: Animate from last to current
+                    animateWaterLevel(lastDisplayedPercent, safePercent.toInt(), 1000)
+                }
             }
             
             // waterLevel.setWaterLevel(safePercent.toInt()) // Replaced by animation

@@ -3,18 +3,18 @@
     <!-- Shadow Layer -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/duo_card_shadow" />
-            <corners android:radius="16dp" />
+            <solid android:color="@color/duo_card_shadow" /> <!-- Keep shadow or make it darker/transparent? relying on existing resource -->
+            <corners android:radius="20dp" />
         </shape>
     </item>
     <!-- Main Card Layer -->
     <item android:bottom="4dp">
         <shape android:shape="rectangle">
-            <solid android:color="@color/duo_card_bg" />
-            <corners android:radius="16dp" />
+            <solid android:color="#1F1F1F" /> <!-- Dark Grey -->
+            <corners android:radius="20dp" />
             <stroke
                 android:width="2dp"
-                android:color="@color/duo_border" />
+                android:color="#333333" />
         </shape>
     </item>
 </layer-list>
