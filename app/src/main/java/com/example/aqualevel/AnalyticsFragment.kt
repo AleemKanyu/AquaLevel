@@ -1,6 +1,7 @@
 package com.example.aqualevel
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -30,7 +31,20 @@ class AnalyticsFragment : Fragment() {
     private var emptyDistance = 130.0
     private var fullDistance = 20.0
     private var tankVolume = 2000.0
+    private var volumeUnit = "L"
     private val displayMultiplier = 1 
+
+    private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _: SharedPreferences, key: String? ->
+        if (key == "volume_unit" || key == "full_distance" || key == "empty_distance" || key == "tank_volume") {
+            loadCalibrationSettings()
+            // Force refresh UI values
+            val viewModel = ViewModelProvider(requireActivity())[ReadingViewModel::class.java]
+            viewModel.allReadings.value?.let { readings ->
+                // This will trigger the observer logic again
+                viewModel.refreshAllReadings() 
+            }
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_analytics, container, false)
@@ -38,6 +52,9 @@ class AnalyticsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        sharedPref.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
+
         loadCalibrationSettings()
 
         percentageText = view.findViewById(R.id.percentage)
@@ -86,42 +103,86 @@ class AnalyticsFragment : Fragment() {
             androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_blue_shadow)
         )
 
+        // Entry animation for cards
+        val cardViews = listOf(
+            view.findViewById<View>(R.id.hourlyUsageGraph).parent as View,
+            view.findViewById<View>(R.id.cardLevel),
+            view.findViewById<View>(R.id.cardUsage),
+            view.findViewById<View>(R.id.cardAvg),
+            view.findViewById<View>(R.id.cardTime)
+        )
+        
+        cardViews.forEachIndexed { index, card ->
+            card.alpha = 0f
+            card.translationY = 50f
+            card.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(400)
+                .setStartDelay(index * 100L)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+        }
+
         val viewModel = ViewModelProvider(requireActivity())[ReadingViewModel::class.java]
 
+        val updateUI = { readings: List<Readings> ->
+            if (readings.isNotEmpty()) {
+                val latest = readings.first()
+                val clampedLatest = latest.level.coerceIn(fullDistance, emptyDistance)
+                val currentPercent = (((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * 100).toInt()
+                percentageText.text = currentPercent.toString()
+
+                val todayReadings = readings.filter { isSameDay(it.timestamp, System.currentTimeMillis()) }
+
+                if (todayReadings.size >= 2) {
+                    val minDist = todayReadings.minOf { it.level }
+                    val maxDist = todayReadings.maxOf { it.level }
+                    val usedDist = (maxDist - minDist).coerceAtLeast(0.0)
+                    val totalDistRange = emptyDistance - fullDistance
+                    val usedVolume = (usedDist / totalDistRange) * tankVolume * displayMultiplier
+                    if (volumeUnit == "gal") {
+                        val galVal = usedVolume * 0.264172
+                        dailyUsageText.text = galVal.toInt().toString()
+                        view.findViewById<TextView>(R.id.dailyUsageUnit).text = "gal"
+                    } else {
+                        dailyUsageText.text = usedVolume.toInt().toString()
+                        view.findViewById<TextView>(R.id.dailyUsageUnit).text = "L"
+                    }
+                } else {
+                    dailyUsageText.text = "0"
+                }
+
+                val avgDailyUsageVolume = calculateAverageDailyUsage(readings)
+                val hourlyAvg = if (avgDailyUsageVolume > 0) avgDailyUsageVolume / 24 else 0.0
+                
+                if (volumeUnit == "gal") {
+                    val galVal = hourlyAvg * 0.264172
+                    hourlyAvgText.text = galVal.toInt().toString()
+                    view.findViewById<TextView>(R.id.hourlyAvgUnit).text = "gal/h"
+                } else {
+                    hourlyAvgText.text = hourlyAvg.toInt().toString()
+                    view.findViewById<TextView>(R.id.hourlyAvgUnit).text = "L/h"
+                }
+
+                if (avgDailyUsageVolume > 0) {
+                    val currentVolume = ((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * tankVolume * displayMultiplier
+                    val daysLeft = (currentVolume / avgDailyUsageVolume).toInt()
+                    daysLeftText.text = daysLeft.toString()
+                } else {
+                    daysLeftText.text = "--"
+                }
+
+                updateHourlyGraph(todayReadings)
+            }
+        }
+
         viewModel.allReadings.observe(viewLifecycleOwner) { readings ->
-            if (readings.isEmpty()) return@observe
+            updateUI(readings)
+        }
 
-            val latest = readings.first()
-            val clampedLatest = latest.level.coerceIn(fullDistance, emptyDistance)
-            val currentPercent = (((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * 100).toInt()
-            percentageText.text = currentPercent.toString()
-
-            val todayReadings = readings.filter { isSameDay(it.timestamp, System.currentTimeMillis()) }
-
-            if (todayReadings.size >= 2) {
-                val minDist = todayReadings.minOf { it.level }
-                val maxDist = todayReadings.maxOf { it.level }
-                val usedDist = (maxDist - minDist).coerceAtLeast(0.0)
-                val totalDistRange = emptyDistance - fullDistance
-                val usedVolume = (usedDist / totalDistRange) * tankVolume * displayMultiplier
-                dailyUsageText.text = usedVolume.toInt().toString()
-            } else {
-                dailyUsageText.text = "0"
-            }
-
-            val avgDailyUsageVolume = calculateAverageDailyUsage(readings)
-            val hourlyAvg = if (avgDailyUsageVolume > 0) avgDailyUsageVolume / 24 else 0.0
-            hourlyAvgText.text = hourlyAvg.toInt().toString()
-
-            if (avgDailyUsageVolume > 0) {
-                val currentVolume = ((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * tankVolume * displayMultiplier
-                val daysLeft = (currentVolume / avgDailyUsageVolume).toInt()
-                daysLeftText.text = daysLeft.toString()
-            } else {
-                daysLeftText.text = "--"
-            }
-
-            updateHourlyGraph(todayReadings)
+        viewModel.refreshTrigger.observe(viewLifecycleOwner) {
+            viewModel.allReadings.value?.let { updateUI(it) }
         }
     }
 
@@ -153,6 +214,7 @@ class AnalyticsFragment : Fragment() {
         emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
         fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
         tankVolume = sharedPref.getInt("tank_volume", 2000).toDouble()
+        volumeUnit = sharedPref.getString("volume_unit", "L") ?: "L"
     }
 
     private fun isSameDay(t1: Long, t2: Long): Boolean {
@@ -174,7 +236,16 @@ class AnalyticsFragment : Fragment() {
         return if (usages.isNotEmpty()) usages.average() else 0.0
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        val sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        sharedPref.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
+    }
+
     private fun performHapticFeedbackCommon(view: View) {
+        val sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        if (!sharedPref.getBoolean("vibration_enabled", true)) return
+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             view.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
         } else {

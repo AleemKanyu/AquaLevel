@@ -16,6 +16,11 @@ class SettingsFragment : Fragment() {
     private lateinit var editFullDist: EditText
     private lateinit var editEmptyDist: EditText
     private lateinit var editVolume: EditText
+    private lateinit var switchVibration: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var switchNotifications: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var radioGroupUnits: android.widget.RadioGroup
+    private lateinit var seekbarThreshold: android.widget.SeekBar
+    private lateinit var textThresholdValue: android.widget.TextView
     private lateinit var saveButton: Button
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -29,7 +34,20 @@ class SettingsFragment : Fragment() {
         editFullDist = view.findViewById(R.id.editFullDist)
         editEmptyDist = view.findViewById(R.id.editEmptyDist)
         editVolume = view.findViewById(R.id.editVolume)
+        switchVibration = view.findViewById(R.id.switchVibration)
+        switchNotifications = view.findViewById(R.id.switchNotifications)
+        radioGroupUnits = view.findViewById(R.id.radioGroupUnits)
+        seekbarThreshold = view.findViewById(R.id.seekbarThreshold)
+        textThresholdValue = view.findViewById(R.id.textThresholdValue)
         saveButton = view.findViewById(R.id.saveButton)
+
+        seekbarThreshold.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                textThresholdValue.text = "$progress%"
+            }
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+        })
 
         loadSettings()
 
@@ -47,11 +65,24 @@ class SettingsFragment : Fragment() {
         val fullDist = sharedPref.getFloat("full_distance", 20.0f)
         val emptyDist = sharedPref.getFloat("empty_distance", 130.0f)
         val volume = sharedPref.getInt("tank_volume", 2000)
+        val vibrationEnabled = sharedPref.getBoolean("vibration_enabled", true)
+        val notificationsEnabled = sharedPref.getBoolean("notifications_enabled", true)
+        val unit = sharedPref.getString("volume_unit", "L")
+        val threshold = sharedPref.getInt("alert_threshold", 30)
 
         editUserName.setText(userName)
         editFullDist.setText(fullDist.toString())
         editEmptyDist.setText(emptyDist.toString())
         editVolume.setText(volume.toString())
+        switchVibration.isChecked = vibrationEnabled
+        switchNotifications.isChecked = notificationsEnabled
+        if (unit == "gal") {
+            view?.findViewById<android.widget.RadioButton>(R.id.radioGallons)?.isChecked = true
+        } else {
+            view?.findViewById<android.widget.RadioButton>(R.id.radioLiters)?.isChecked = true
+        }
+        seekbarThreshold.progress = threshold
+        textThresholdValue.text = "$threshold%"
     }
 
     private fun saveSettings() {
@@ -61,6 +92,11 @@ class SettingsFragment : Fragment() {
         val fullDist = editFullDist.text.toString().toFloatOrNull()
         val emptyDist = editEmptyDist.text.toString().toFloatOrNull()
         val volume = editVolume.text.toString().toIntOrNull()
+        
+        val vibrationEnabled = switchVibration.isChecked
+        val notificationsEnabled = switchNotifications.isChecked
+        val unit = if (radioGroupUnits.checkedRadioButtonId == R.id.radioGallons) "gal" else "L"
+        val threshold = seekbarThreshold.progress
 
         if (userName.isBlank()) {
             Toast.makeText(requireContext(), "User name cannot be empty", Toast.LENGTH_SHORT).show()
@@ -76,6 +112,10 @@ class SettingsFragment : Fragment() {
         sharedPref.putFloat("full_distance", fullDist)
         sharedPref.putFloat("empty_distance", emptyDist)
         sharedPref.putInt("tank_volume", volume)
+        sharedPref.putBoolean("vibration_enabled", vibrationEnabled)
+        sharedPref.putBoolean("notifications_enabled", notificationsEnabled)
+        sharedPref.putString("volume_unit", unit)
+        sharedPref.putInt("alert_threshold", threshold)
         sharedPref.apply()
 
         Toast.makeText(requireContext(), "Settings saved", Toast.LENGTH_SHORT).show()

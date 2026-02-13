@@ -1,43 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Dark Mode Palette Overrides -->
-    <color name="background_light">#121212</color> <!-- Main background dark -->
-    <color name="background_dark">#121212</color>
+    <color name="surface_background">#121212</color>
+    <color name="surface_card">#1E1E1E</color>
+    <color name="border_color">#333333</color>
+    <color name="text_primary">#E0E0E0</color>
+    <color name="text_secondary">#B0B0B0</color>
+
+    <!-- Keep brand colors vibrant in dark mode -->
+    <color name="brand_primary">#1CB0F6</color>
+    <color name="brand_success">#78FF00</color>
+    <color name="brand_warning">#FF9600</color>
+    <color name="brand_info">#CE82FF</color>
+    <color name="brand_accent">#2CDAC5</color>
     
-    <color name="duo_card_bg">#1E1E1E</color> <!-- Cards slightly lighter than bg -->
+    <!-- Legacy Mappings (Dark) -->
+    <color name="duo_blue">@color/brand_primary</color>
+    <color name="duo_blue_shadow">#1899D6</color>
+    <color name="duo_green">@color/brand_success</color>
+    <color name="duo_green_shadow">#5CB800</color>
+    <color name="duo_orange">@color/brand_warning</color>
+    <color name="duo_orange_shadow">#CC7900</color>
+    <color name="duo_purple">@color/brand_info</color>
+    <color name="duo_purple_shadow">#A560D1</color>
+    <color name="duo_teal">@color/brand_accent</color>
+    <color name="duo_teal_shadow">#1FA394</color>
+    <color name="duo_border">@color/border_color</color>
+    <color name="duo_card_bg">@color/surface_card</color>
+    <color name="duo_text_primary">@color/text_primary</color>
+    <color name="duo_text_secondary">@color/text_secondary</color>
+
+    <color name="background_light">@color/surface_background</color>
+    <color name="background_dark">@color/surface_background</color>
     <color name="card_background_light">@color/duo_card_bg</color>
     <color name="card_background_dark">@color/duo_card_bg</color>
-
-    <color name="duo_text_primary">#E0E0E0</color> <!-- Primary Text Light Grey -->
     <color name="text_primary_light">@color/duo_text_primary</color>
     <color name="text_primary_dark">@color/duo_text_primary</color>
-
-    <color name="duo_text_secondary">#B0B0B0</color> <!-- Secondary Text Darker Grey -->
     <color name="text_secondary_light">@color/duo_text_secondary</color>
     <color name="text_secondary_dark">@color/duo_text_secondary</color>
-
-    <color name="duo_border">#333333</color> <!-- Darker borders -->
-    <color name="blue_light">@color/duo_border</color>
-
-    <!-- Keep brand colors vibrant -->
-    <color name="duo_green">#78FF00</color>
-    <color name="duo_green_shadow">#5CB800</color>
-    <color name="duo_green_darker">#4B9E00</color>
-    <color name="duo_green_darker_shadow">#2E6100</color>
-    <color name="duo_blue">#1CB0F6</color>
-    <color name="duo_blue_shadow">#1899D6</color>
-    <color name="duo_orange">#FF9600</color>
-    <color name="duo_orange_shadow">#CC7900</color>
-    <color name="duo_purple">#CE82FF</color>
-    <color name="duo_purple_shadow">#A560D1</color>
-    <color name="duo_teal">#2CDAC5</color>
-    <color name="duo_teal_shadow">#1FA394</color>
-    <color name="duo_lime">#78C800</color>
-    <color name="duo_lime_shadow">#589600</color>
-    
-    <color name="water_blue">@color/duo_blue</color>
-    <color name="bar_blue">@color/duo_blue_shadow</color>
-    <color name="blue_dark">@color/duo_blue</color>
 
     <!-- Notification Card Colors (Dark Mode) -->
     <color name="notification_card_bg">#3E2723</color>
@@ -47,5 +47,5 @@
     <color name="notification_button_bg">#FFA726</color>
     <color name="notification_button_text">@android:color/black</color>
     
-    <color name="main_background">#121212</color>
+    <color name="main_background">@color/surface_background</color>
 </resources>

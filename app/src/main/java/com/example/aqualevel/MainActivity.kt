@@ -61,13 +61,15 @@ class MainActivity : AppCompatActivity() {
 
         themeToggle.setOnClickListener {
             performHapticFeedbackCommon(it)
-            val isDark = sharedPref.getBoolean("is_dark_mode", false)
-            val newMode = !isDark
-            sharedPref.edit().putBoolean("is_dark_mode", newMode).apply()
-            
-            AppCompatDelegate.setDefaultNightMode(
-                if (newMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
-            )
+            applyClickAnimation(themeIcon) {
+                val isDark = sharedPref.getBoolean("is_dark_mode", false)
+                val newMode = !isDark
+                sharedPref.edit().putBoolean("is_dark_mode", newMode).apply()
+                
+                AppCompatDelegate.setDefaultNightMode(
+                    if (newMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+                )
+            }
         }
 
         setupNavigation(savedInstanceState == null)
@@ -176,7 +178,7 @@ class MainActivity : AppCompatActivity() {
         // Highlight active icon
         activeImg.setPadding(dpToPx(this, 12), dpToPx(this, 12), dpToPx(this, 12), dpToPx(this, 12))
         activeImg.imageTintList = android.content.res.ColorStateList.valueOf(
-            android.graphics.Color.WHITE
+            androidx.core.content.ContextCompat.getColor(this, R.color.white)
         )
 
         // Optional: Small scale animation on the icon for extra "pop"
@@ -231,6 +233,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun performHapticFeedbackCommon(view: View) {
+        if (!sharedPref.getBoolean("vibration_enabled", true)) return
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             view.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
         } else {
@@ -242,6 +246,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun performRefreshVibration() {
+        if (!sharedPref.getBoolean("vibration_enabled", true)) return
+        
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val manager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             manager.defaultVibrator
@@ -249,7 +255,7 @@ class MainActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
-
+        
         if (vibrator.hasVibrator()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val timings = longArrayOf(30, 70, 30, 70, 30, 70, 30, 70, 30, 70)
@@ -273,6 +279,12 @@ class MainActivity : AppCompatActivity() {
             view.animate().scaleX(1f).scaleY(1f).setDuration(80).start()
         }.start()
         action()
+    }
+
+    private fun applyClickAnimation(view: View, onAnimationEnd: () -> Unit) {
+        view.animate().scaleX(0.85f).scaleY(0.85f).setDuration(100).withEndAction {
+            view.animate().scaleX(1f).scaleY(1f).setDuration(100).withEndAction { onAnimationEnd() }.start()
+        }.start()
     }
 
     private fun dpToPx(context: Context, dp: Int): Int = (dp * context.resources.displayMetrics.density).toInt()
