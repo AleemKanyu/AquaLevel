@@ -19,4 +19,20 @@ class ReadingsRepository (private val readingsDao: ReadingsDao){
     suspend fun insert(readings: Readings){
         readingsDao.insert(readings)
     }
+
+    /**
+     * Inserts a list of readings into the database.
+     * @param readingsList The list of [Readings] objects to insert.
+     */
+    suspend fun insertAll(readingsList: List<Readings>) {
+        readingsDao.insertAll(readingsList)
+    }
+
+    /**
+     * Synchronously fetches all readings from the database.
+     * Useful for background tasks or data export.
+     */
+    suspend fun getAllReadingsSync(): List<Readings> {
+        return readingsDao.getAllReadingsSync()
+    }
 }

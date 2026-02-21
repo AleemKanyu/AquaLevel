@@ -6,15 +6,26 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
+import androidx.work.ExistingPeriodicWorkPolicy
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
+import android.util.Log
+import android.content.ComponentName // Added this import
 
 /**
  * Implementation of the App Widget to display current water level on the home screen.
  * Updates are triggered periodically by the system or manually via broadcasts.
  */
 class WaterLevelWidget : AppWidgetProvider() {
+
+    private val TAG = "WaterLevelWidget"
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -27,11 +38,40 @@ class WaterLevelWidget : AppWidgetProvider() {
     }
 
     override fun onEnabled(context: Context) {
-        // Enter relevant functionality for when the first widget is created
+        // Enqueue periodic work to update the widget
+        Log.d(TAG, "onEnabled: Scheduling periodic work for water level updates.")
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED) // Require network for data fetching
+            .build()
+
+        val repeatingRequest = PeriodicWorkRequest.Builder(
+            WaterLevelUpdateWorker::class.java,
+            30, TimeUnit.MINUTES // Defined in appwidget_info.xml as 1800000ms = 30 minutes
+        )
+            .addTag(WaterLevelUpdateWorker.WORK_NAME) // Use the tag defined in the worker
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            WaterLevelUpdateWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE, // Replace existing work if any
+            repeatingRequest
+        )
+        
+        // Also trigger an immediate update when the widget is first enabled/added
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val thisAppWidget = ComponentName(context, WaterLevelWidget::class.java.name)
+        val appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget)
+        if (appWidgetIds.isNotEmpty()) {
+            Log.d(TAG, "onEnabled: Triggering immediate widget update.")
+            WaterLevelUpdateWorker.enqueueOnce(context) // Corrected call
+        }
     }
 
     override fun onDisabled(context: Context) {
-        // Enter relevant functionality for when the last widget is disabled
+        // Cancel all work associated with this widget when the last instance is removed
+        Log.d(TAG, "onDisabled: Cancelling periodic work for water level updates.")
+        WorkManager.getInstance(context).cancelUniqueWork(WaterLevelUpdateWorker.WORK_NAME)
     }
 }
 

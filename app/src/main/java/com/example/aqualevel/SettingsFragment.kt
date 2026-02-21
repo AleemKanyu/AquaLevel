@@ -1,16 +1,32 @@
 package com.example.aqualevel
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.aqualevel.WaveView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.BufferedReader
+import java.io.OutputStreamWriter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+/**
+ * Fragment for managing user profile, sensor calibration, and data import/export.
+ */
 class SettingsFragment : Fragment() {
 
     private lateinit var editUserName: com.google.android.material.textfield.TextInputEditText
@@ -30,6 +46,36 @@ class SettingsFragment : Fragment() {
     private lateinit var switchWidgetTimestamp: com.google.android.material.materialswitch.MaterialSwitch
     private lateinit var radioGroupWidgetTheme: android.widget.RadioGroup
     private lateinit var saveButton: Button
+    private lateinit var exportDataButton: Button 
+    private lateinit var importDataButton: Button 
+
+    private lateinit var readingsRepository: ReadingsRepository
+
+    private val createDocumentLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            it.data?.data?.let { uri ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    exportDataToUri(uri)
+                }
+            }
+        }
+    }
+
+    private val openDocumentLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            it.data?.data?.let { uri ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    importDataFromUri(uri)
+                }
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val readingsDao = ReadingsDatabase.getInstance(requireContext()).getReadingsDao()
+        readingsRepository = ReadingsRepository(readingsDao)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_settings, container, false)
@@ -58,11 +104,12 @@ class SettingsFragment : Fragment() {
         seekbarThreshold = view.findViewById(R.id.seekbarThreshold)
         textThresholdValue = view.findViewById(R.id.textThresholdValue)
         saveButton = view.findViewById(R.id.saveButton)
+        exportDataButton = view.findViewById(R.id.exportDataButton) 
+        importDataButton = view.findViewById(R.id.importDataButton) 
         
-        // Initialize Profile Wave Animation
         val profileWaveView = view.findViewById<WaveView>(R.id.profileWaveView)
         view.postDelayed({
-            profileWaveView.setWaterLevel(50) // Set a static 50% for aesthetic effect
+            profileWaveView.setWaterLevel(50) 
         }, 500)
 
         seekbarThreshold.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
@@ -79,6 +126,20 @@ class SettingsFragment : Fragment() {
             performHapticFeedbackCommon(it)
             applyClickAnimation(it) {
                 saveSettings()
+            }
+        }
+
+        exportDataButton.setOnClickListener { 
+            performHapticFeedbackCommon(it)
+            applyClickAnimation(it) {
+                exportData()
+            }
+        }
+
+        importDataButton.setOnClickListener { 
+            performHapticFeedbackCommon(it)
+            applyClickAnimation(it) {
+                importData()
             }
         }
     }
@@ -134,14 +195,6 @@ class SettingsFragment : Fragment() {
         val emptyDist = editEmptyDist.text.toString().toFloatOrNull()
         val volume = editVolume.text.toString().toIntOrNull()
         
-        val vibrationEnabled = switchVibration.isChecked
-        val notificationsEnabled = switchNotifications.isChecked
-        val gyroWaterEnabled = switchGyroWater.isChecked
-        val disableAnimation = switchDisableAnimation.isChecked
-        val performanceMode = switchPerformanceMode.isChecked
-        val unit = if (radioGroupUnits.checkedRadioButtonId == R.id.radioGallons) "gal" else "L"
-        val threshold = seekbarThreshold.progress
-
         if (userName.isBlank()) {
             Toast.makeText(requireContext(), "User name cannot be empty", Toast.LENGTH_SHORT).show()
             return
@@ -156,11 +209,11 @@ class SettingsFragment : Fragment() {
         sharedPref.putFloat("full_distance", fullDist)
         sharedPref.putFloat("empty_distance", emptyDist)
         sharedPref.putInt("tank_volume", volume)
-        sharedPref.putBoolean("vibration_enabled", vibrationEnabled)
-        sharedPref.putBoolean("notifications_enabled", notificationsEnabled)
-        sharedPref.putBoolean("gyro_water_enabled", gyroWaterEnabled)
-        sharedPref.putBoolean("disable_animation", disableAnimation)
-        sharedPref.putBoolean("performance_mode", performanceMode)
+        sharedPref.putBoolean("vibration_enabled", switchVibration.isChecked)
+        sharedPref.putBoolean("notifications_enabled", switchNotifications.isChecked)
+        sharedPref.putBoolean("gyro_water_enabled", switchGyroWater.isChecked)
+        sharedPref.putBoolean("disable_animation", switchDisableAnimation.isChecked)
+        sharedPref.putBoolean("performance_mode", switchPerformanceMode.isChecked)
         
         sharedPref.putBoolean("widget_show_percentage", switchWidgetPercentage.isChecked)
         sharedPref.putBoolean("widget_show_volume", switchWidgetVolume.isChecked)
@@ -169,19 +222,132 @@ class SettingsFragment : Fragment() {
         val widgetTheme = if (radioGroupWidgetTheme.checkedRadioButtonId == R.id.radioWidgetLight) "light" else "dark"
         sharedPref.putString("widget_theme", widgetTheme)
         
+        val unit = if (radioGroupUnits.checkedRadioButtonId == R.id.radioGallons) "gal" else "L"
         sharedPref.putString("volume_unit", unit)
-        sharedPref.putInt("alert_threshold", threshold)
+        sharedPref.putInt("alert_threshold", seekbarThreshold.progress)
         sharedPref.apply()
 
         Toast.makeText(requireContext(), "Settings saved", Toast.LENGTH_SHORT).show()
         
-        // Trigger widget update
         val intent = android.content.Intent(requireContext(), WaterLevelWidget::class.java)
         intent.action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
         val ids = android.appwidget.AppWidgetManager.getInstance(requireContext())
             .getAppWidgetIds(android.content.ComponentName(requireContext(), WaterLevelWidget::class.java))
         intent.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
         requireContext().sendBroadcast(intent)
+    }
+
+    private fun exportData() {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val fileName = "aqualevel_readings_$timeStamp.csv"
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/csv"
+            putExtra(Intent.EXTRA_TITLE, fileName)
+        }
+        createDocumentLauncher.launch(intent)
+    }
+
+    /**
+     * Exports all readings from the database to a CSV file.
+     * Uses a synchronous fetch to ensure all data is captured reliably.
+     */
+    private suspend fun exportDataToUri(uri: Uri) {
+        withContext(Dispatchers.Main) {
+            Toast.makeText(requireContext(), "Exporting data...", Toast.LENGTH_SHORT).show()
+        }
+        try {
+            // Using synchronous fetch for reliable background thread access
+            val allReadings = readingsRepository.getAllReadingsSync()
+            requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
+                OutputStreamWriter(outputStream).use { writer ->
+                    writer.write("id,level,timestamp\n") 
+                    allReadings.forEach { reading ->
+                        writer.write("${reading.id},${reading.level},${reading.timestamp}\n")
+                    }
+                }
+            }
+            withContext(Dispatchers.Main) {
+                Toast.makeText(requireContext(), "Data exported successfully!", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(requireContext(), "Error exporting data: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+            e.printStackTrace()
+        }
+    }
+
+    private fun importData() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            val mimeTypes = arrayOf(
+                "text/csv",
+                "text/comma-separated-values",
+                "application/csv",
+                "text/plain"
+            )
+            putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
+        }
+        openDocumentLauncher.launch(intent)
+    }
+
+    /**
+     * Imports readings from a CSV file into the database.
+     * Uses bulk insertion and ignores original IDs to prevent primary key conflicts, 
+     * ensuring all historical data is merged correctly.
+     */
+    private suspend fun importDataFromUri(uri: Uri) {
+        withContext(Dispatchers.Main) {
+            Toast.makeText(requireContext(), "Importing data...", Toast.LENGTH_SHORT).show()
+        }
+        try {
+            val importedReadings = mutableListOf<Readings>()
+            requireContext().contentResolver.openInputStream(uri)?.use { inputStream ->
+                BufferedReader(inputStream.reader()).use { reader ->
+                    var line = reader.readLine() // Read header
+                    if (line == null || !line.contains("level") || !line.contains("timestamp")) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(requireContext(), "Invalid CSV format. Header 'level,timestamp' expected.", Toast.LENGTH_LONG).show()
+                        }
+                        return@use
+                    }
+
+                    while (reader.readLine().also { line = it } != null) {
+                        val parts = line?.split(",")
+                        if (parts != null && parts.size >= 3) {
+                            try {
+                                val level = parts[1].toDouble()
+                                val timestamp = parts[2].toLong()
+                                // Create new Readings object; Room will auto-generate new unique IDs.
+                                // This is safer for merging data from different devices.
+                                importedReadings.add(Readings(level = level, timestamp = timestamp))
+                            } catch (e: Exception) {
+                                Log.e("SettingsFragment", "Skipping malformed row: $line", e)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (importedReadings.isNotEmpty()) {
+                // Perform a single bulk insertion for maximum efficiency and UI consistency
+                readingsRepository.insertAll(importedReadings)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(requireContext(), "Successfully imported ${importedReadings.size} readings!", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(requireContext(), "No valid data found in CSV.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(requireContext(), "Error importing data: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+            e.printStackTrace()
+        }
     }
 
     private fun performHapticFeedbackCommon(view: View) {

@@ -676,6 +676,34 @@
                 android:textColor="@color/white"
                 app:backgroundTint="@null"/>
 
+            <!-- Export Data Button -->
+            <Button
+                android:id="@+id/exportDataButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:text="EXPORT DATA TO CSV"
+                android:fontFamily="sans-serif-black"
+                android:textSize="16sp"
+                android:letterSpacing="0.05"
+                android:background="@drawable/bg_duo_button_secondary"
+                android:textColor="@color/duo_text_primary"
+                app:backgroundTint="@null" />
+
+            <!-- Import Data Button -->
+            <Button
+                android:id="@+id/importDataButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:text="IMPORT DATA FROM CSV"
+                android:fontFamily="sans-serif-black"
+                android:textSize="16sp"
+                android:letterSpacing="0.05"
+                android:background="@drawable/bg_duo_button_secondary"
+                android:textColor="@color/duo_text_primary"
+                app:backgroundTint="@null" />
+
         </LinearLayout>
     </ScrollView>
 

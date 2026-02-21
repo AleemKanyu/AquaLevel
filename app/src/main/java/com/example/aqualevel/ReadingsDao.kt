@@ -11,10 +11,15 @@ import androidx.room.*
 interface ReadingsDao {
     /**
      * Inserts a single reading into the database.
-     * @param readings The [Readings] object to be inserted.
      */
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(readings: Readings)
+
+    /**
+     * Inserts multiple readings into the database.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(readingsList: List<Readings>)
 
     /**
      * Fetches all readings from the database, ordered by timestamp in descending order.
@@ -22,6 +27,12 @@ interface ReadingsDao {
      */
     @Query("SELECT * FROM readings ORDER BY timestamp DESC")
     fun fetchALL(): LiveData<List<Readings>>
+
+    /**
+     * Synchronous fetch of all readings for export purposes.
+     */
+    @Query("SELECT * FROM readings ORDER BY timestamp DESC")
+    suspend fun getAllReadingsSync(): List<Readings>
 
     /**
      * Calculates the daily usage for the last 7 days.
