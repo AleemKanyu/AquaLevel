@@ -3,7 +3,9 @@ package com.example.aqualevel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -12,12 +14,20 @@ import kotlinx.coroutines.launch
  */
 class ReadingViewModel(application: Application) : AndroidViewModel(application) {
 
-    /** LiveData containing all readings, observed by UI components. */
-    val allReadings: LiveData<List<Readings>>
-    /** LiveData containing summarized usage data for the last 7 days. */
-    val weeklyUsage: LiveData<List<DailyUsage>>
-
     private val repository: ReadingsRepository
+
+    /** 
+     * LiveData containing hourly readings from Room.
+     * Maps HourlyReadingEntity to the legacy Readings format if necessary, 
+     * or provides them directly for the Hourly Graph.
+     */
+    val hourlyReadings: LiveData<List<HourlyReadingEntity>>
+
+    /** 
+     * LiveData containing daily usage for the last 7 days from Room.
+     * Used for the Weekly Graph.
+     */
+    val weeklyUsage: LiveData<List<DailyUsageEntity>>
 
     private val _refreshTrigger = androidx.lifecycle.MutableLiveData<Unit>()
     val refreshTrigger: LiveData<Unit> = _refreshTrigger
@@ -26,18 +36,23 @@ class ReadingViewModel(application: Application) : AndroidViewModel(application)
         val dao = ReadingsDatabase.getInstance(application).getReadingsDao()
         repository = ReadingsRepository(dao)
 
-        allReadings = repository.allReadings
-        weeklyUsage = repository.last7DaysUsage
+        // Single source of truth: Room flows converted to LiveData
+        hourlyReadings = repository.hourlyReadings.asLiveData()
+        weeklyUsage = repository.dailyUsages.asLiveData()
+
+        // Start real-time sync from Firestore to Room
+        repository.startSyncing()
     }
 
-    /** Triggers a refresh of UI components observing these data sources. */
+    /** Triggers a refresh if needed (e.g., manual pull-to-refresh) */
     fun refreshAllReadings() {
         _refreshTrigger.value = Unit
+        // Since we use snapshot listeners, data updates automatically.
+        // But we can re-trigger sync if needed or just let Firestore handle it.
     }
 
     /**
-     * Adds a new water level reading to the database.
-     * @param readings The [Readings] object to insert.
+     * Adds a new water level reading (kept for compatibility).
      */
     fun addReading(readings: Readings) = viewModelScope.launch {
         repository.insert(readings)

@@ -23,6 +23,9 @@ import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 
 /**
  * Fragment for managing user profile, sensor calibration, and data import/export.
@@ -351,11 +354,20 @@ class SettingsFragment : Fragment() {
     }
 
     private fun performHapticFeedbackCommon(view: View) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            view.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
+        val sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        if (!sharedPref.getBoolean("vibration_enabled", true)) return
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val vibratorManager = requireContext().getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            val vibrator = vibratorManager.defaultVibrator
+            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
-            val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
-            if (vibrator.hasVibrator()) vibrator.vibrate(50)
+            val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(50)
         }
     }
 

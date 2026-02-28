@@ -2,8 +2,7 @@ package com.example.aqualevel
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Bundle
-import android.util.Log
+import android.os.*
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,8 +10,6 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import java.time.Instant
-import java.time.ZoneId
 import java.util.*
 
 class AnalyticsFragment : Fragment() {
@@ -32,23 +29,14 @@ class AnalyticsFragment : Fragment() {
     private var fullDistance = 20.0
     private var tankVolume = 2000.0
     private var volumeUnit = "L"
-    private val displayMultiplier = 1 
     
-    // Animation State
-    private var lastPercent = 0
-    private var lastDailyUsage = 0
-    private var lastHourlyAvg = 0.0
-    private var lastDaysLeft = 0 
+    private lateinit var viewModel: ReadingViewModel
+    private lateinit var sharedPref: SharedPreferences
 
     private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _: SharedPreferences, key: String? ->
         if (key == "volume_unit" || key == "full_distance" || key == "empty_distance" || key == "tank_volume") {
             loadCalibrationSettings()
-            // Force refresh UI values
-            val viewModel = ViewModelProvider(requireActivity())[ReadingViewModel::class.java]
-            viewModel.allReadings.value?.let { readings ->
-                // This will trigger the observer logic again
-                viewModel.refreshAllReadings() 
-            }
+            refreshUI()
         }
     }
 
@@ -58,7 +46,7 @@ class AnalyticsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+        sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
         sharedPref.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
 
         loadCalibrationSettings()
@@ -82,221 +70,115 @@ class AnalyticsFragment : Fragment() {
             }
         }
 
-        // Initialize Background Animations
+        setupBackgrounds(view)
+        animateEntry(view)
+
+        viewModel = ViewModelProvider(requireActivity())[ReadingViewModel::class.java]
+        observeData()
+    }
+
+    private fun setupBackgrounds(view: View) {
         val bgLevel: CardBackgroundView = view.findViewById(R.id.bgLevel)
         val bgUsage: CardBackgroundView = view.findViewById(R.id.bgUsage)
         val bgAvg: CardBackgroundView = view.findViewById(R.id.bgAvg)
         val bgTime: CardBackgroundView = view.findViewById(R.id.bgTime)
 
-        bgLevel.setRole(
-            CardBackgroundView.Role.TANK_LEVEL,
-            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_purple),
-            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_purple_shadow)
-        )
-        bgUsage.setRole(
-            CardBackgroundView.Role.DAILY_USAGE,
-            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_teal),
-            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_teal_shadow)
-        )
-        bgAvg.setRole(
-            CardBackgroundView.Role.HOURLY_AVG,
-            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_lime),
-            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_lime_shadow)
-        )
-        bgTime.setRole(
-            CardBackgroundView.Role.EST_TIME,
-            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_blue),
-            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_blue_shadow)
-        )
+        bgLevel.setRole(CardBackgroundView.Role.TANK_LEVEL, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_purple), androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_purple_shadow))
+        bgUsage.setRole(CardBackgroundView.Role.DAILY_USAGE, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_teal), androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_teal_shadow))
+        bgAvg.setRole(CardBackgroundView.Role.HOURLY_AVG, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_lime), androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_lime_shadow))
+        bgTime.setRole(CardBackgroundView.Role.EST_TIME, androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_blue), androidx.core.content.ContextCompat.getColor(requireContext(), R.color.duo_blue_shadow))
+    }
 
-        // Entry animation for cards
+    private fun animateEntry(view: View) {
         val cardViews = listOf(
             view.findViewById<View>(R.id.hourlyUsageGraph).parent as View,
-            view.findViewById<View>(R.id.cardLevel),
-            view.findViewById<View>(R.id.cardUsage),
-            view.findViewById<View>(R.id.cardAvg),
-            view.findViewById<View>(R.id.cardTime)
+            cardLevel, cardUsage, cardAvg, cardTime
         )
-        
         cardViews.forEachIndexed { index, card ->
             card.alpha = 0f
             card.translationY = 50f
-            card.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(400)
-                .setStartDelay(index * 100L)
-                .setInterpolator(android.view.animation.DecelerateInterpolator())
-                .start()
-        }
-
-        val viewModel = ViewModelProvider(requireActivity())[ReadingViewModel::class.java]
-
-        viewModel.allReadings.observe(viewLifecycleOwner) { readings ->
-            displayReadings(readings)
-        }
-
-        viewModel.refreshTrigger.observe(viewLifecycleOwner) {
-            viewModel.allReadings.value?.let { displayReadings(it) }
+            card.animate().alpha(1f).translationY(0f).setDuration(400).setStartDelay(index * 100L).start()
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Force animation on resume (which happens when switching back to this tab)
-        val viewModel = ViewModelProvider(requireActivity())[ReadingViewModel::class.java]
-        viewModel.allReadings.value?.let { 
-             displayReadings(it)
+    private fun observeData() {
+        viewModel.hourlyReadings.observe(viewLifecycleOwner) { readings ->
+            updateUI(readings)
         }
     }
 
-    private fun displayReadings(readings: List<Readings>) {
-        if (readings.isNotEmpty()) {
-            val latest = readings.first()
-            val clampedLatest = latest.level.coerceIn(fullDistance, emptyDistance)
-            val currentPercent = (((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * 100).toInt()
-            
-            // Force animation from 0 every time
-            percentageText.animateCountUp(currentPercent, 0, 1000)
-            lastPercent = currentPercent
+    private fun updateUI(readings: List<HourlyReadingEntity>) {
+        if (readings.isEmpty()) return
+        
+        val latest = readings.maxByOrNull { it.timestamp } ?: return
+        val clampedLatest = latest.distance.coerceIn(fullDistance, emptyDistance)
+        val currentPercent = (((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * 100).toInt()
+        
+        percentageText.animateCountUp(currentPercent, 0, 1000)
 
-            // Add subtle pulse if level is low (< 30%)
-            if (currentPercent < 30) {
-                if (percentageText.animation == null) {
-                    percentageText.animate()
-                        .scaleX(1.1f)
-                        .scaleY(1.1f)
-                        .setDuration(1000)
-                        .setInterpolator(android.view.animation.CycleInterpolator(1f))
-                        .withEndAction { 
-                            if (isAdded && percentageText.text.toString().toIntOrNull() ?: 100 < 30) {
-                                // Restart if still low
-                                percentageText.alpha = 1f 
-                            }
-                        }
-                        .start()
-                }
-            } else {
-                percentageText.animate().cancel()
-                percentageText.scaleX = 1f
-                percentageText.scaleY = 1f
-            }
-
-            val todayReadings = readings.filter { isSameDay(it.timestamp, System.currentTimeMillis()) }
-
-            if (todayReadings.size >= 2) {
-                val minDist = todayReadings.minOf { it.level }
-                val maxDist = todayReadings.maxOf { it.level }
-                val usedDist = (maxDist - minDist).coerceAtLeast(0.0)
-                val totalDistRange = emptyDistance - fullDistance
-                val usedVolume = (usedDist / totalDistRange) * tankVolume * displayMultiplier
-                if (volumeUnit == "gal") {
-                    val galVal = usedVolume * 0.264172
-                    dailyUsageText.animateCountUp(galVal.toInt(), 0, 1000)
-                    view?.findViewById<TextView>(R.id.dailyUsageUnit)?.text = "gal"
-                } else {
-                    dailyUsageText.animateCountUp(usedVolume.toInt(), 0, 1000)
-                    view?.findViewById<TextView>(R.id.dailyUsageUnit)?.text = "L"
-                }
-                lastDailyUsage = usedVolume.toInt()
-            } else {
-                dailyUsageText.text = "0"
-            }
-
-            val avgDailyUsageVolume = calculateAverageDailyUsage(readings)
-            val hourlyAvg = if (avgDailyUsageVolume > 0) avgDailyUsageVolume / 24 else 0.0
-            
-            
-            if (volumeUnit == "gal") {
-                val galVal = hourlyAvg * 0.264172
-                hourlyAvgText.animateCountUp(galVal.toInt(), 0, 1000)
-                view?.findViewById<TextView>(R.id.hourlyAvgUnit)?.text = "gal/h"
-            } else {
-                hourlyAvgText.animateCountUp(hourlyAvg.toInt(), 0, 1000)
-                view?.findViewById<TextView>(R.id.hourlyAvgUnit)?.text = "L/h"
-            }
-            lastHourlyAvg = hourlyAvg
-
-            if (avgDailyUsageVolume > 0) {
-                val currentVolume = ((emptyDistance - clampedLatest) / (emptyDistance - fullDistance)) * tankVolume * displayMultiplier
-                val daysLeft = (currentVolume / avgDailyUsageVolume)
-                daysLeftText.animateCountUp(daysLeft.toInt(), 0, 1000)
-                lastDaysLeft = daysLeft.toInt()
-            } else {
-                daysLeftText.text = "--"
-            }
-
-            updateHourlyGraph(todayReadings)
-        }
-    }
-
-
-
-    private fun updateHourlyGraph(todayReadings: List<Readings>) {
-        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        // Graph data from hourly_current subcollection
         val hourlyData = FloatArray(24) { 0f }
         val totalDistRange = emptyDistance - fullDistance
-        if (totalDistRange <= 0) return
-
-        val groupedByHour = todayReadings.groupBy {
-            Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).hour
-        }
-
-        for (hour in 0..currentHour) {
-            val readingsInHour = groupedByHour[hour]
-            if (readingsInHour != null && readingsInHour.size >= 2) {
-                val minDist = readingsInHour.minOf { it.level }
-                val maxDist = readingsInHour.maxOf { it.level }
-                val usedDist = (maxDist - minDist).coerceAtLeast(0.0)
-                val usedVolume = (usedDist / totalDistRange) * tankVolume * displayMultiplier
-                hourlyData[hour] = usedVolume.toFloat()
+        
+        readings.forEach { reading ->
+            val hourInt = reading.hour.toIntOrNull() ?: 0
+            if (hourInt in 0..23) {
+                // Using distance as a measure of volume for graph
+                val vol = (reading.distance / totalDistRange) * tankVolume
+                hourlyData[hourInt] = vol.toFloat()
             }
         }
         hourlyUsageGraph.setData(hourlyData.toList())
+
+        // Logic for Average and Days Left can be added based on weeklyUsage too
+        viewModel.weeklyUsage.value?.let { usage ->
+            if (usage.isNotEmpty()) {
+                val totalUsed = usage.sumOf { it.totalDistance }
+                val avgDaily = totalUsed / usage.size
+                val usedVol = (avgDaily / totalDistRange) * tankVolume
+                
+                if (volumeUnit == "gal") {
+                    dailyUsageText.animateCountUp((usedVol * 0.264172).toInt(), 0, 1000)
+                    hourlyAvgText.animateCountUp(((usedVol/24) * 0.264172).toInt(), 0, 1000)
+                } else {
+                    dailyUsageText.animateCountUp(usedVol.toInt(), 0, 1000)
+                    hourlyAvgText.animateCountUp((usedVol/24).toInt(), 0, 1000)
+                }
+
+                val currentVol = ((emptyDistance - clampedLatest) / totalDistRange) * tankVolume
+                if (usedVol > 0) {
+                    val days = (currentVol / usedVol).toInt()
+                    daysLeftText.animateCountUp(days, 0, 1000)
+                }
+            }
+        }
+    }
+
+    private fun refreshUI() {
+        viewModel.hourlyReadings.value?.let { updateUI(it) }
     }
 
     private fun loadCalibrationSettings() {
-        val sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
         emptyDistance = sharedPref.getFloat("empty_distance", 130.0f).toDouble()
         fullDistance = sharedPref.getFloat("full_distance", 20.0f).toDouble()
         tankVolume = sharedPref.getInt("tank_volume", 2000).toDouble()
         volumeUnit = sharedPref.getString("volume_unit", "L") ?: "L"
     }
 
-    private fun isSameDay(t1: Long, t2: Long): Boolean {
-        val d1 = Instant.ofEpochMilli(t1).atZone(ZoneId.systemDefault()).toLocalDate()
-        val d2 = Instant.ofEpochMilli(t2).atZone(ZoneId.systemDefault()).toLocalDate()
-        return d1 == d2
-    }
-
-    private fun calculateAverageDailyUsage(readings: List<Readings>): Double {
-        val grouped = readings.groupBy { Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).toLocalDate() }
-        val totalDistRange = emptyDistance - fullDistance
-        val usages = grouped.values.mapNotNull { dayList ->
-            if (dayList.size < 2) return@mapNotNull null
-            val minDist = dayList.minOf { it.level }
-            val maxDist = dayList.maxOf { it.level }
-            val usedDist = (maxDist - minDist).coerceAtLeast(0.0)
-            (usedDist / totalDistRange) * tankVolume * displayMultiplier
-        }
-        return if (usages.isNotEmpty()) usages.average() else 0.0
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        val sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
-        sharedPref.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
-    }
-
     private fun performHapticFeedbackCommon(view: View) {
-        val sharedPref = requireContext().getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
         if (!sharedPref.getBoolean("vibration_enabled", true)) return
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            view.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = requireContext().getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            val vibrator = vibratorManager.defaultVibrator
+            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
-            val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
-            if (vibrator.hasVibrator()) vibrator.vibrate(50)
+            val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(50)
         }
     }
 
@@ -304,5 +186,10 @@ class AnalyticsFragment : Fragment() {
         view.animate().scaleX(0.95f).scaleY(0.95f).setDuration(100).withEndAction {
             view.animate().scaleX(1f).scaleY(1f).setDuration(100).withEndAction { onAnimationEnd() }.start()
         }.start()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        sharedPref.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
     }
 }

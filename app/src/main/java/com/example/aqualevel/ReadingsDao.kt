@@ -2,43 +2,47 @@ package com.example.aqualevel
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Data Access Object for the readings table.
- * Defines all database interactions (insert, query) for [Readings] data.
+ * Defines all database interactions (insert, query) for water level data.
  */
 @Dao
 interface ReadingsDao {
-    /**
-     * Inserts a single reading into the database.
-     */
+    // --- Old Readings (Keep for compatibility if needed, or remove if strictly following new requirements) ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(readings: Readings)
 
-    /**
-     * Inserts multiple readings into the database.
-     */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(readingsList: List<Readings>)
 
-    /**
-     * Fetches all readings from the database, ordered by timestamp in descending order.
-     * @return A [LiveData] list of all [Readings].
-     */
     @Query("SELECT * FROM readings ORDER BY timestamp DESC")
     fun fetchALL(): LiveData<List<Readings>>
 
-    /**
-     * Synchronous fetch of all readings for export purposes.
-     */
     @Query("SELECT * FROM readings ORDER BY timestamp DESC")
     suspend fun getAllReadingsSync(): List<Readings>
 
-    /**
-     * Calculates the daily usage for the last 7 days.
-     * It groups readings by day and finds the min and max levels for each day.
-     * @return A [LiveData] list of [DailyUsage] objects for the last 7 days.
-     */
     @Query("SELECT strftime('%Y-%m-%d', timestamp/1000, 'unixepoch') as day, MIN(level) as minLevel, MAX(level) as maxLevel FROM readings GROUP BY day ORDER BY day DESC LIMIT 7")
     fun getLast7DaysUsage(): LiveData<List<DailyUsage>>
+
+    // --- New Hourly Reading Logic ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertHourlyReadings(readings: List<HourlyReadingEntity>)
+
+    @Query("SELECT * FROM hourly_readings ORDER BY hour ASC")
+    fun getHourlyReadings(): Flow<List<HourlyReadingEntity>>
+
+    @Query("DELETE FROM hourly_readings")
+    suspend fun clearHourlyReadings()
+
+    // --- New Daily Usage Logic ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertDailyUsages(usages: List<DailyUsageEntity>)
+
+    @Query("SELECT * FROM daily_usage ORDER BY date DESC LIMIT 7")
+    fun getLast7DaysDailyUsage(): Flow<List<DailyUsageEntity>>
+    
+    @Query("DELETE FROM daily_usage")
+    suspend fun clearDailyUsage()
 }
