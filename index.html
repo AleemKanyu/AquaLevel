@@ -11,7 +11,42 @@
         rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#5FA7A7",
+                        secondary: "#A1C9F1",
+                        highlight: "#8EDBA3",
+                        "background-light": "#F0F7FA",
+                        "surface-light": "#FFFFFF",
+                        "text-main": "#334155",
+                        "text-muted": "#64748B"
+                    },
+                    fontFamily: {
+                        display: "Inter"
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                        lg: "2rem",
+                        xl: "3rem",
+                        "4xl": "2.5rem",
+                        full: "9999px"
+                    },
+                    boxShadow: {
+                        soft: "0 10px 40px -10px rgba(95, 167, 167, 0.1)",
+                        nav: "0 20px 25px -5px rgba(51, 65, 85, 0.2)",
+                        glow: "0 0 30px rgba(142, 219, 163, 0.2)",
+                        tank: "0 30px 70px -10px rgba(95, 167, 167, 0.55), 0 15px 30px -10px rgba(95, 167, 167, 0.3)"
+                    }
+                }
+            }
+        };
+    </script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Firebase App (the core Firebase SDK) -->
     <script type="module">
@@ -85,13 +120,18 @@
 
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
-                days.push(data); // { date, totalDistance, readingCount }
+
+                // Ensure date and totalDistance exist. Use Document ID for date string default.
+                const safeDate = data.date || docSnap.id;
+                const safeTotalDist = data.totalDistance || 0;
+
+                days.push({ date: safeDate, totalDistance: safeTotalDist, readingCount: data.readingCount || 0 });
 
                 // Calculate actual volume used today matching Android logic
                 // volume = (totalDistance / (emptyDistance - fullDistance)) * tankVolume
                 const totalDistRange = emptyDistance - fullDistance;
-                if (totalDistRange > 0) {
-                    const usedVolume = (data.totalDistance / totalDistRange) * tankVolume;
+                if (totalDistRange > 0 && safeTotalDist > 0) {
+                    const usedVolume = (safeTotalDist / totalDistRange) * tankVolume;
                     totalUsageSum += usedVolume;
                 }
             });
@@ -122,8 +162,16 @@
             // Sort days by date string ascending (oldest to newest) to map left to right on the chart
             days.sort((a, b) => a.date.localeCompare(b.date));
 
-            // Populate the last 7 bars
-            // We have 7 DOM elements (m, t, w, t, f, s, s) representing the 7 days
+            // Generate last 7 days array dynamically to always match the current week properly
+            const last7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0); // M, T, W, etc.
+                last7Days.push({ date: dateStr, label: dayName });
+            }
+
             const totalDistRange = emptyDistance - fullDistance;
 
             for (let i = 0; i < 7; i++) {
@@ -131,30 +179,31 @@
                 const tooltipUI = document.getElementById(`bar-tooltip-${i}`);
                 const labelUI = document.getElementById(`bar-label-${i}`);
 
-                if (!barUI) continue;
+                if (!barUI || !labelUI || !tooltipUI) continue;
 
-                // If we have data for this index (from right to left)
-                // e.g. if we only have 3 days of data, populate the last 3 bars
-                const dataIndex = days.length - (7 - i);
+                const targetDate = last7Days[i].date;
+                labelUI.innerText = last7Days[i].label;
 
-                if (dataIndex >= 0 && dataIndex < days.length && totalDistRange > 0) {
-                    const dayData = days[dataIndex];
+                // Find if there's data for this strict date
+                const dayData = days.find(d => d.date === targetDate);
+
+                if (dayData && totalDistRange > 0) {
                     const usedVolume = (dayData.totalDistance / totalDistRange) * tankVolume;
-
-                    // Cap max visual height to 100%, minimum 5% so the bar is at least visible
                     const visualPercent = Math.max(5, Math.min(100, (usedVolume / tankVolume) * 100));
 
                     barUI.style.height = `${visualPercent}%`;
                     tooltipUI.innerText = `${Math.round(usedVolume)} L`;
-
-                    // highlight the current day text if it's the last one
-                    if (i === 6) {
-                        labelUI.className = "text-[10px] lg:text-xs font-bold text-primary";
-                    }
                 } else {
-                    // No data for this day
+                    // No data for this specific calendar day
                     barUI.style.height = "0%";
                     tooltipUI.innerText = "0 L";
+                }
+
+                // highlight the current day text if it's the last one
+                if (i === 6) {
+                    labelUI.className = "text-[10px] lg:text-xs font-bold text-primary";
+                } else {
+                    labelUI.className = "text-[10px] lg:text-xs text-text-muted font-medium";
                 }
             }
         }
@@ -167,10 +216,16 @@
 
             const readings = [];
             querySnapshot.forEach((docSnap) => {
-                readings.push(docSnap.data());
+                readings.push({
+                    hour: docSnap.id,
+                    ...docSnap.data()
+                });
             });
 
             if (readings.length === 0) return;
+
+            // Ensure the readings are sorted numerically by hour
+            readings.sort((a, b) => parseInt(a.hour) - parseInt(b.hour));
 
             const totalDistRange = emptyDistance - fullDistance;
             if (totalDistRange <= 0) return;
@@ -220,20 +275,86 @@
             populateHourlyGraph(hourlyUsage);
         }
 
+        let hourlyChartInstance = null;
+
         function populateHourlyGraph(hourlyUsageArray) {
-            const maxVal = Math.max(...hourlyUsageArray) || 10; // Handle 0 max
+            const ctx = document.getElementById('hourlyUsageChart').getContext('2d');
 
-            for (let i = 0; i < 24; i++) {
-                const barUI = document.getElementById(`hourly-bar-ui-${i}`);
-                const tooltipUI = document.getElementById(`hourly-bar-tooltip-${i}`);
-                if (!barUI) continue;
+            // Labels 00 to 23
+            const labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
 
-                const val = hourlyUsageArray[i];
-                const heightPercent = Math.max(0, Math.min(100, (val / maxVal) * 100));
-
-                barUI.style.height = `${heightPercent}%`;
-                tooltipUI.innerText = `${Math.round(val)} L`;
+            if (hourlyChartInstance) {
+                hourlyChartInstance.destroy(); // Clear existing chart to redraw
             }
+
+            // Create gradient for the area under the curve
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(28, 176, 246, 0.4)');
+            gradient.addColorStop(1, 'rgba(28, 176, 246, 0.05)');
+
+            hourlyChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Water Usage (L)',
+                        data: hourlyUsageArray,
+                        borderColor: '#1CB0F6', // Duolingo blue
+                        backgroundColor: gradient,
+                        borderWidth: 4,
+                        pointBackgroundColor: '#1CB0F6',
+                        pointBorderColor: '#FFFFFF',
+                        pointBorderWidth: 2,
+                        pointRadius: function (context) {
+                            return context.raw > 0 ? 5 : 0; // Only show dots for > 0
+                        },
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0.4 // Cubic bezier smoothing
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return Math.round(context.raw) + ' L';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                callback: function (val, index) {
+                                    return index % 4 === 0 ? labels[index] + 'h' : ''; // Label every 4 hours
+                                },
+                                color: '#A0A0A0',
+                                font: { size: 10, weight: 'bold' }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#E5E5E5',
+                                drawBorder: false,
+                                tickLength: 0,
+                                borderDash: [15, 15]
+                            },
+                            ticks: {
+                                color: '#A0A0A0',
+                                font: { size: 12, weight: 'bold' },
+                                maxTicksLimit: 5,
+                                padding: 10
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         fetchDailyHistory();
@@ -274,39 +395,6 @@
         }
 
     </script>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#5FA7A7",
-                        secondary: "#A1C9F1",
-                        highlight: "#8EDBA3",
-                        "background-light": "#F0F7FA",
-                        "surface-light": "#FFFFFF",
-                        "text-main": "#334155",
-                        "text-muted": "#64748B"
-                    },
-                    fontFamily: {
-                        display: "Inter"
-                    },
-                    borderRadius: {
-                        DEFAULT: "1rem",
-                        lg: "2rem",
-                        xl: "3rem",
-                        "4xl": "2.5rem",
-                        full: "9999px"
-                    },
-                    boxShadow: {
-                        soft: "0 10px 40px -10px rgba(95, 167, 167, 0.1)",
-                        nav: "0 20px 25px -5px rgba(51, 65, 85, 0.2)",
-                        glow: "0 0 30px rgba(142, 219, 163, 0.2)",
-                        tank: "0 30px 70px -10px rgba(95, 167, 167, 0.55), 0 15px 30px -10px rgba(95, 167, 167, 0.3)"
-                    }
-                }
-            }
-        };
     </script>
     <style type="text/tailwindcss">
         @layer utilities {
@@ -379,7 +467,7 @@
 
     <!-- Main Content Area -->
     <main
-        class="w-full max-w-md mx-auto md:max-w-7xl md:ml-24 min-h-screen px-6 pt-6 pb-28 md:pb-10 md:px-10 lg:px-12 md:py-10 relative">
+        class="w-full max-w-[400px] mx-auto md:max-w-[1280px] md:ml-[110px] min-h-screen px-6 pt-6 pb-28 md:pb-10 md:px-10 lg:px-12 md:py-10 relative">
 
         <!-- Header Section -->
         <header class="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-6 md:gap-0">
@@ -673,23 +761,8 @@
                 <h3 class="text-xl font-black text-text-main mb-6 uppercase tracking-wide">Hourly Usage</h3>
 
                 <!-- 24 Hour Chart Container -->
-                <div class="flex-grow flex items-end justify-between gap-1 w-full h-40 md:h-56">
-                    <!-- Javascript will loop and populate 24 bars here -->
-                    <script>
-                        for (let i = 0; i < 24; i++) {
-                            const timeLabel = i % 4 === 0 ? `${i}h` : ''; // Show label every 4 hrs
-                            document.write(`
-                                <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer h-full">
-                                    <div class="w-full bg-[#F0F0F0] rounded-lg relative h-full flex overflow-hidden">
-                                        <div id="hourly-bar-ui-${i}" class="absolute bottom-0 left-0 w-full bg-[#1CB0F6] group-hover:bg-[#1899D6] transition-all duration-500 rounded-lg" style="height: 0%">
-                                            <div id="hourly-bar-tooltip-${i}" class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 font-bold">0 L</div>
-                                        </div>
-                                    </div>
-                                    <span class="text-[9px] text-text-muted font-bold">${timeLabel}</span>
-                                </div>
-                            `);
-                        }
-                    </script>
+                <div class="flex-grow w-full relative h-40 md:h-56 mt-4">
+                    <canvas id="hourlyUsageChart"></canvas>
                 </div>
             </div>
 
