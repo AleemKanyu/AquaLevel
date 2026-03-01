@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html class="" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Fully Responsive Pop-Out Tanker Dashboard</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            projectId: "aqualevel-383e2",
+            apiKey: "AIzaSyBDy5mkeoGeUlCK5dyx3g1cKGhYb9qTh5Q",
+            storageBucket: "aqualevel-383e2.firebasestorage.app"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // UI Elements
+        const capacityText = document.getElementById("capacity-text");
+        const totalUsageText = document.getElementById("total-usage-text");
+        const daysLeftText = document.getElementById("days-left-text");
+        const waterFillUI = document.getElementById("water-fill-ui");
+
+        // Reference to the main tanker document
+        const sensorDataRef = doc(db, "sensorData", "esp32_01");
+
+        // Calibration Constants (Default)
+        const emptyDistance = 130.0;
+        const fullDistance = 20.0;
+        const tankVolume = 2000.0; // Liters
+
+        // Listen for real-time updates on the Tanker level
+        onSnapshot(sensorDataRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const distance = data.distance || 0;
+
+                // Calculate true percentage matching the Android app logic
+                // percent = ((emptyDistance - min(max(distance, fullDistance), emptyDistance)) / (emptyDistance - fullDistance)) * 100.0
+                let clampedDistance = Math.min(Math.max(distance, fullDistance), emptyDistance);
+                let percentage = ((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0;
+
+                percentage = Math.round(percentage);
+                if (percentage > 100) percentage = 100;
+                if (percentage < 0) percentage = 0;
+
+                // Update Home UI Text
+                capacityText.innerText = `${percentage}%`;
+
+                // Update Water Fill CSS
+                waterFillUI.style.height = `${percentage}%`;
+
+                // Update Analytics UI Text
+                const analyticsPercentage = document.getElementById("analytics-percentage");
+                if (analyticsPercentage) {
+                    analyticsPercentage.innerText = `${percentage}`;
+                }
+            } else {
+                console.log("No such document!");
+            }
+        });
+
+        // Fetch Daily History for the Chart
+        async function fetchDailyHistory() {
+            const dailyColRef = collection(db, "sensorData", "esp32_01", "daily");
+            const q = query(dailyColRef, orderBy("date", "desc"), limit(7));
+            const querySnapshot = await getDocs(q);
+
+            let totalUsageSum = 0;
+            const days = [];
+
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                days.push(data); // { date, totalDistance, readingCount }
+
+                // Calculate actual volume used today matching Android logic
+                // volume = (totalDistance / (emptyDistance - fullDistance)) * tankVolume
+                const totalDistRange = emptyDistance - fullDistance;
+                if (totalDistRange > 0) {
+                    const usedVolume = (data.totalDistance / totalDistRange) * tankVolume;
+                    totalUsageSum += usedVolume;
+                }
+            });
+
+            // Update Total Usage Card
+            if (totalUsageSum > 1000) {
+                totalUsageText.innerHTML = `${(totalUsageSum / 1000).toFixed(1)}k <span class="text-sm font-medium text-text-muted ml-0.5">L</span>`;
+            } else {
+                totalUsageText.innerHTML = `${Math.round(totalUsageSum)} <span class="text-sm font-medium text-text-muted ml-0.5">L</span>`;
+            }
+
+            // Based on average daily usage, calculate est days left assuming tank capacity
+            const averageUsage = days.length > 0 ? (totalUsageSum / days.length) : 0;
+            let daysLeft = 0;
+            if (averageUsage > 0) {
+                // Assuming current filled tank capacity for true days left matching real life
+                // But for simplicity of matching the dashboard, we'll do tankVolume / averageUsage
+                daysLeft = Math.round(tankVolume / averageUsage);
+            }
+            daysLeftText.innerHTML = `~${daysLeft} <span class="text-sm font-medium text-text-muted">days</span>`;
+
+            // Update Analytics Tab text
+            const analyticsDaysLeft = document.getElementById("analytics-days-left");
+            if (analyticsDaysLeft) {
+                analyticsDaysLeft.innerText = `~${daysLeft}`;
+            }
+
+            // Sort days by date string ascending (oldest to newest) to map left to right on the chart
+            days.sort((a, b) => a.date.localeCompare(b.date));
+
+            // Populate the last 7 bars
+            // We have 7 DOM elements (m, t, w, t, f, s, s) representing the 7 days
+            const totalDistRange = emptyDistance - fullDistance;
+
+            for (let i = 0; i < 7; i++) {
+                const barUI = document.getElementById(`bar-ui-${i}`);
+                const tooltipUI = document.getElementById(`bar-tooltip-${i}`);
+                const labelUI = document.getElementById(`bar-label-${i}`);
+
+                if (!barUI) continue;
+
+                // If we have data for this index (from right to left)
+                // e.g. if we only have 3 days of data, populate the last 3 bars
+                const dataIndex = days.length - (7 - i);
+
+                if (dataIndex >= 0 && dataIndex < days.length && totalDistRange > 0) {
+                    const dayData = days[dataIndex];
+                    const usedVolume = (dayData.totalDistance / totalDistRange) * tankVolume;
+
+                    // Cap max visual height to 100%, minimum 5% so the bar is at least visible
+                    const visualPercent = Math.max(5, Math.min(100, (usedVolume / tankVolume) * 100));
+
+                    barUI.style.height = `${visualPercent}%`;
+                    tooltipUI.innerText = `${Math.round(usedVolume)} L`;
+
+                    // highlight the current day text if it's the last one
+                    if (i === 6) {
+                        labelUI.className = "text-[10px] lg:text-xs font-bold text-primary";
+                    }
+                } else {
+                    // No data for this day
+                    barUI.style.height = "0%";
+                    tooltipUI.innerText = "0 L";
+                }
+            }
+        }
+
+        // Fetch Hourly Current History for the Analytics Graph
+        async function fetchHourlyHistory() {
+            const hourlyColRef = collection(db, "sensorData", "esp32_01", "hourly_current");
+            const q = query(hourlyColRef, orderBy("timestamp", "asc")); // order by timestamp or hour
+            const querySnapshot = await getDocs(q);
+
+            const readings = [];
+            querySnapshot.forEach((docSnap) => {
+                readings.push(docSnap.data());
+            });
+
+            if (readings.length === 0) return;
+
+            const totalDistRange = emptyDistance - fullDistance;
+            if (totalDistRange <= 0) return;
+
+            // Arrays for the 24 hour graph
+            const hourlyUsage = new Array(24).fill(0);
+            let todayTotalUsageDist = 0;
+
+            for (let i = 1; i < readings.length; i++) {
+                const prev = readings[i - 1];
+                const curr = readings[i];
+
+                const currHour = parseInt(curr.hour);
+                if (isNaN(currHour)) continue;
+
+                const diff = curr.distance - prev.distance;
+                if (diff > 0) { // Water level dropped
+                    const usedVol = (diff / totalDistRange) * tankVolume;
+                    hourlyUsage[currHour] = usedVol;
+                    todayTotalUsageDist += diff;
+                }
+            }
+
+            const todayUsageVol = (todayTotalUsageDist / totalDistRange) * tankVolume;
+
+            // Populate Analytics Cards
+            const analyticsDailyUsage = document.getElementById("analytics-daily-usage");
+            if (analyticsDailyUsage) {
+                analyticsDailyUsage.innerText = Math.round(todayUsageVol);
+            }
+
+            const currentHour = new Date().getHours() + 1; // 1-based to avoid div/0 early in day
+            const hourlyAvgVol = todayUsageVol / currentHour;
+            const analyticsHourlyAvg = document.getElementById("analytics-hourly-avg");
+            if (analyticsHourlyAvg) {
+                analyticsHourlyAvg.innerText = Math.round(hourlyAvgVol);
+            }
+
+            // Estimate Time to Refill based on active daily avg (from the standard fetchDaily history)
+            // But we will re-fetch a quick average here for self-containment 
+            // In Android app this uses moving average from daily usage list. We'll approximate using today's avg if daily hasn't loaded yet.
+            const averageDailyUsageVolStr = document.getElementById("days-left-text")?.innerText || "";
+            // Relying partially on the other function for time estimate, or we can recalculate:
+            // Assuming tankVolume / averageUsage
+
+            // Build the Hourly Graph
+            populateHourlyGraph(hourlyUsage);
+        }
+
+        function populateHourlyGraph(hourlyUsageArray) {
+            const maxVal = Math.max(...hourlyUsageArray) || 10; // Handle 0 max
+
+            for (let i = 0; i < 24; i++) {
+                const barUI = document.getElementById(`hourly-bar-ui-${i}`);
+                const tooltipUI = document.getElementById(`hourly-bar-tooltip-${i}`);
+                if (!barUI) continue;
+
+                const val = hourlyUsageArray[i];
+                const heightPercent = Math.max(0, Math.min(100, (val / maxVal) * 100));
+
+                barUI.style.height = `${heightPercent}%`;
+                tooltipUI.innerText = `${Math.round(val)} L`;
+            }
+        }
+
+        fetchDailyHistory();
+        fetchHourlyHistory();
+
+        // Simple Tab Switching Logic
+        window.switchTab = function (tabName) {
+            const homeView = document.getElementById("home-view");
+            const analyticsView = document.getElementById("analytics-view");
+
+            if (tabName === 'home') {
+                homeView.classList.remove("hidden");
+                analyticsView.classList.add("hidden");
+
+                // Update nav highlighting
+                document.querySelectorAll('.nav-btn-home').forEach(btn => {
+                    btn.classList.add('bg-primary/10', 'text-primary');
+                    btn.classList.remove('text-text-muted', 'hover:bg-background-light');
+                });
+                document.querySelectorAll('.nav-btn-analytics').forEach(btn => {
+                    btn.classList.remove('bg-primary/10', 'text-primary');
+                    btn.classList.add('text-text-muted', 'hover:bg-background-light');
+                });
+            } else if (tabName === 'analytics') {
+                homeView.classList.add("hidden");
+                analyticsView.classList.remove("hidden");
+
+                // Update nav highlighting
+                document.querySelectorAll('.nav-btn-analytics').forEach(btn => {
+                    btn.classList.add('bg-primary/10', 'text-primary');
+                    btn.classList.remove('text-text-muted', 'hover:bg-background-light');
+                });
+                document.querySelectorAll('.nav-btn-home').forEach(btn => {
+                    btn.classList.remove('bg-primary/10', 'text-primary');
+                    btn.classList.add('text-text-muted', 'hover:bg-background-light');
+                });
+            }
+        }
+
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#5FA7A7",
+                        secondary: "#A1C9F1",
+                        highlight: "#8EDBA3",
+                        "background-light": "#F0F7FA",
+                        "surface-light": "#FFFFFF",
+                        "text-main": "#334155",
+                        "text-muted": "#64748B"
+                    },
+                    fontFamily: {
+                        display: "Inter"
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                        lg: "2rem",
+                        xl: "3rem",
+                        "4xl": "2.5rem",
+                        full: "9999px"
+                    },
+                    boxShadow: {
+                        soft: "0 10px 40px -10px rgba(95, 167, 167, 0.1)",
+                        nav: "0 20px 25px -5px rgba(51, 65, 85, 0.2)",
+                        glow: "0 0 30px rgba(142, 219, 163, 0.2)",
+                        tank: "0 30px 70px -10px rgba(95, 167, 167, 0.55), 0 15px 30px -10px rgba(95, 167, 167, 0.3)"
+                    }
+                }
+            }
+        };
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .glass-panel {
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+            }
+            .water-fill {
+                background: linear-gradient(180deg, #7BBFBF 0%, #5FA7A7 100%);
+            }
+            .tank-silhouette {
+                background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.4) 100%);
+                box-shadow: inset 0 0 15px rgba(255,255,255,0.6);
+            }
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+        }
+        body {
+            min-height: max(884px, 100dvh);
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light font-display text-text-main antialiased min-h-screen relative md:flex selection:bg-primary/30">
+
+    <!-- Desktop Navigation Sidebar -->
+    <nav
+        class="hidden md:flex fixed top-0 left-0 h-screen w-24 bg-surface-light border-r border-white/40 shadow-nav flex-col items-center py-8 z-50">
+        <!-- Logo Hook -->
+        <button class="flex items-center justify-center w-12 h-12 text-primary transition-colors mb-10 group">
+            <span
+                class="material-symbols-outlined text-[32px] group-hover:scale-110 transition-transform">water_drop</span>
+        </button>
+
+        <div class="flex flex-col gap-6 flex-grow justify-center w-full items-center">
+            <button onclick="switchTab('home')"
+                class="nav-btn-home flex items-center justify-center w-12 h-12 text-primary bg-primary/10 rounded-2xl transition-all shadow-sm">
+                <span class="material-symbols-outlined text-2xl">home</span>
+            </button>
+            <button onclick="switchTab('analytics')"
+                class="nav-btn-analytics flex items-center justify-center w-12 h-12 text-text-muted hover:text-primary hover:bg-background-light rounded-2xl transition-colors">
+                <span class="material-symbols-outlined text-2xl">query_stats</span>
+            </button>
+            <button
+                class="flex items-center justify-center w-12 h-12 text-text-muted hover:text-primary hover:bg-background-light rounded-2xl transition-colors">
+                <span class="material-symbols-outlined text-2xl">leaderboard</span>
+            </button>
+            <button
+                class="flex items-center justify-center w-12 h-12 text-text-muted hover:text-primary hover:bg-background-light rounded-2xl transition-colors">
+                <span class="material-symbols-outlined text-2xl">person</span>
+            </button>
+        </div>
+
+        <!-- Add Button (Moved to Bottom of Sidebar for Desktop) -->
+        <button
+            class="relative w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 transform transition-transform hover:scale-105 active:scale-95 mt-auto">
+            <span class="material-symbols-outlined text-2xl">add</span>
+        </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main
+        class="w-full max-w-md mx-auto md:max-w-7xl md:ml-24 min-h-screen px-6 pt-6 pb-28 md:pb-10 md:px-10 lg:px-12 md:py-10 relative">
+
+        <!-- Header Section -->
+        <header class="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-6 md:gap-0">
+            <!-- Mobile Greeting (Hidden on Desktop, replaced by flex row header) -->
+            <div class="flex items-center gap-3 md:hidden">
+                <div class="relative">
+                    <img alt="User Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkZfbvn8byUDPME2FMngW1967kGmpH8TAJH32xnDtlPgk0RAs3Cb60DjTa7i0RWmgc9jIMSYG9BH-_kL2e3V82NEvrE-sv-8gfZYT8MmNs1iTIsHu4IZ4XKkTddJtutkFXxDBmJbU3zdJVSi5H-wwTSPgLBKuPdjh2wj_a_CMNm4IkwCklwXkt11jUy78iSYwbkDANeZUrbwK1K4naPM9WvJcHgjVMS9XQ91jDLgOnl3zTyEKugHrakGZh1P3Gs-YLMalYcRFcgAQ" />
+                    <div class="absolute bottom-0 right-0 w-3 h-3 bg-highlight border-2 border-white rounded-full">
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs text-text-muted font-medium">Welcome back,</p>
+                    <h2 class="text-lg font-bold text-text-main">Brenda</h2>
+                </div>
+            </div>
+
+            <div class="hidden md:flex items-center gap-3 mb-4 md:hidden">
+                <!-- Keep for reference if needed but mobile is handled above. Desktop merges greeting below -->
+            </div>
+
+            <!-- Desktop Unified Header Title -->
+            <div class="order-3 md:order-1 mt-2 md:mt-0">
+                <div class="hidden md:flex items-center gap-2 mb-2">
+                    <p class="text-sm text-text-muted font-medium">Welcome back,</p>
+                    <h2 class="text-lg font-bold text-text-main">Brenda</h2>
+                </div>
+                <h1 id="page-title" class="text-3xl lg:text-4xl font-bold tracking-tight text-text-main leading-tight">
+                    Monitor Your <br class="md:hidden" />
+                    <span class="text-primary">Water Levels</span> <span
+                        class="align-middle text-2xl lg:text-3xl">💧</span>
+                </h1>
+            </div>
+
+            <!-- Right Side (Search, Notifications, Profile Avatar for Desktop) -->
+            <div
+                class="flex items-center gap-4 justify-between md:justify-end order-1 md:order-2 self-end md:self-auto w-full md:w-auto -mt-[72px] md:-mt-0">
+                <div class="flex gap-3">
+                    <button
+                        class="w-10 h-10 rounded-full bg-surface-light shadow-sm flex items-center justify-center text-text-muted hover:text-primary transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-xl">search</span>
+                    </button>
+                    <button
+                        class="w-10 h-10 rounded-full bg-surface-light shadow-sm flex items-center justify-center text-text-muted hover:text-primary transition-colors relative cursor-pointer">
+                        <span class="material-symbols-outlined text-xl">notifications</span>
+                        <span class="absolute top-2 right-2.5 w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+                    </button>
+                </div>
+                <!-- Profile Avatar for Desktop (Hidden on Mobile here to avoid dupes) -->
+                <div class="hidden md:block relative cursor-pointer hover:opacity-90 transition-opacity">
+                    <img alt="User Avatar"
+                        class="w-12 h-12 lg:w-14 lg:h-14 rounded-full object-cover border-2 border-white shadow-sm"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkZfbvn8byUDPME2FMngW1967kGmpH8TAJH32xnDtlPgk0RAs3Cb60DjTa7i0RWmgc9jIMSYG9BH-_kL2e3V82NEvrE-sv-8gfZYT8MmNs1iTIsHu4IZ4XKkTddJtutkFXxDBmJbU3zdJVSi5H-wwTSPgLBKuPdjh2wj_a_CMNm4IkwCklwXkt11jUy78iSYwbkDANeZUrbwK1K4naPM9WvJcHgjVMS9XQ91jDLgOnl3zTyEKugHrakGZh1P3Gs-YLMalYcRFcgAQ" />
+                    <div
+                        class="absolute bottom-0 right-0 lg:bottom-1 lg:right-0 w-3.5 h-3.5 bg-highlight border-2 border-white rounded-full">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Home Dashboard View -->
+        <section id="home-view" class="grid grid-cols-1 md:grid-cols-12 md:gap-8 lg:gap-10 h-full">
+
+            <!-- Left Column: Tank Visualizer (Spans 4/12 or 5/12 on Desktop) -->
+            <div class="md:col-span-5 lg:col-span-4 flex flex-col items-center">
+                <section
+                    class="relative bg-surface-light rounded-4xl p-10 shadow-soft mb-6 md:mb-0 transition-colors duration-300 overflow-visible flex flex-col flex-grow items-center w-full min-h-[420px] md:min-h-[500px] justify-center">
+                    <div
+                        class="relative w-48 lg:w-56 h-80 lg:h-96 group hover:scale-105 transition-transform duration-500">
+                        <!-- Tank Outline -->
+                        <div
+                            class="absolute inset-0 rounded-[3.5rem] lg:rounded-[4rem] border-[4px] lg:border-[5px] border-primary/40 tank-silhouette glass-panel overflow-hidden shadow-tank z-10">
+                            <!-- Water Fill Container -->
+                            <div id="water-fill-ui"
+                                class="absolute bottom-0 left-0 w-full h-[60%] water-fill transition-all duration-1000 ease-in-out group-hover:brightness-110">
+                                <div
+                                    class="absolute -top-4 -left-1/2 w-[200%] h-10 lg:h-12 bg-primary/30 rounded-[100%] blur-sm opacity-50 animate-pulse">
+                                </div>
+                                <div class="absolute -top-2 -left-1/4 w-[150%] h-6 lg:h-8 bg-white/30 rounded-[100%]">
+                                </div>
+                                <!-- Bubbles -->
+                                <div class="absolute bottom-12 left-8 w-2 h-2 bg-white/30 rounded-full animate-bounce">
+                                </div>
+                                <div
+                                    class="absolute bottom-24 right-10 w-3 h-3 bg-white/20 rounded-full animate-[bounce_2s_infinite]">
+                                </div>
+                                <div
+                                    class="absolute bottom-8 right-6 w-2 h-2 bg-white/40 rounded-full animate-[bounce_1.5s_infinite]">
+                                </div>
+                            </div>
+                            <!-- Highlights -->
+                            <div class="absolute top-10 left-4 w-2.5 h-48 lg:h-60 bg-white/40 rounded-full blur-[2px]">
+                            </div>
+                            <div class="absolute top-24 right-4 w-2 h-32 lg:h-44 bg-white/20 rounded-full blur-[3px]">
+                            </div>
+                        </div>
+                        <!-- Top Lid Details -->
+                        <div
+                            class="absolute -top-4 lg:-top-5 left-1/2 -translate-x-1/2 w-28 lg:w-32 h-8 lg:h-10 bg-white/95 rounded-full border-2 border-primary/20 shadow-lg z-20">
+                        </div>
+                        <!-- Data Text inside Tank -->
+                        <div
+                            class="absolute inset-0 flex flex-col items-center justify-center z-30 pointer-events-none">
+                            <span id="capacity-text"
+                                class="text-6xl lg:text-7xl font-black text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)]">--%</span>
+                            <span
+                                class="text-[14px] lg:text-base font-bold text-white/95 uppercase tracking-[0.25em] mt-1 drop-shadow-lg">Capacity</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: Stats Grid & Chart (Spans 7/12 or 8/12 on Desktop) -->
+            <div class="md:col-span-7 lg:col-span-8 flex flex-col gap-6 lg:gap-8">
+
+                <!-- Stat Cards (Flex / Grid across the top) -->
+                <div class="grid grid-cols-2 gap-4 lg:gap-6">
+                    <div
+                        class="bg-surface-light p-5 lg:p-6 lg:px-8 rounded-3xl shadow-soft flex flex-col justify-between h-32 lg:h-36 relative overflow-hidden group border border-background-light hover:shadow-lg transition-shadow cursor-pointer">
+                        <div
+                            class="absolute -right-4 -top-4 w-16 h-16 bg-primary/5 rounded-full blur-xl group-hover:scale-[2.5] transition-transform duration-700">
+                        </div>
+                        <div class="relative z-10 flex items-center justify-between">
+                            <div>
+                                <span
+                                    class="material-symbols-outlined text-primary text-2xl lg:text-3xl mb-2 lg:mb-3">waves</span>
+                                <p class="text-[10px] lg:text-xs text-text-muted font-bold uppercase tracking-widest">
+                                    Total Usage</p>
+                            </div>
+                        </div>
+                        <div class="relative z-10">
+                            <span id="total-usage-text" class="text-2xl lg:text-3xl font-bold text-text-main">-- <span
+                                    class="text-sm font-medium text-text-muted ml-0.5">L</span></span>
+                        </div>
+                    </div>
+
+                    <div
+                        class="bg-surface-light p-5 lg:p-6 lg:px-8 rounded-3xl shadow-soft flex flex-col justify-between h-32 lg:h-36 relative overflow-hidden group border border-background-light hover:shadow-lg transition-shadow cursor-pointer">
+                        <div
+                            class="absolute -right-4 -top-4 w-16 h-16 bg-secondary/10 rounded-full blur-xl group-hover:scale-[2.5] transition-transform duration-700">
+                        </div>
+                        <div class="relative z-10">
+                            <span
+                                class="material-symbols-outlined text-secondary text-2xl lg:text-3xl mb-2 lg:mb-3">schedule</span>
+                            <p class="text-[10px] lg:text-xs text-text-muted font-bold uppercase tracking-widest">Est.
+                                Days Left</p>
+                        </div>
+                        <div class="relative z-10 flex items-center justify-between">
+                            <span id="days-left-text" class="text-2xl lg:text-3xl font-bold text-text-main">-- <span
+                                    class="text-sm font-medium text-text-muted">days</span></span>
+                            <div
+                                class="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-highlight flex items-center justify-center shadow-lg shadow-highlight/30 group-hover:-translate-y-1 transition-transform">
+                                <span
+                                    class="material-symbols-outlined text-white text-base lg:text-xl">trending_up</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart Section -->
+                <section
+                    class="bg-surface-light rounded-4xl p-6 lg:p-8 shadow-soft transition-colors duration-300 flex-grow flex flex-col hover:shadow-lg">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <div class="p-1.5 lg:p-2 bg-secondary/15 rounded-lg">
+                                    <span
+                                        class="material-symbols-outlined text-secondary text-xl lg:text-2xl">bar_chart</span>
+                                </div>
+                                <h3 class="text-base lg:text-lg font-bold text-text-main">Daily Usage</h3>
+                            </div>
+                            <p class="text-xs lg:text-sm text-text-muted">Analysis for the current week</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button
+                                class="w-8 h-8 lg:w-10 lg:h-10 rounded-full hover:bg-background-light flex items-center justify-center text-text-muted transition-colors cursor-pointer">
+                                <span class="material-symbols-outlined text-xl">calendar_today</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chart Bars Container -->
+                    <div
+                        class="flex-grow flex items-end justify-between gap-3 lg:gap-6 pb-2 px-1 lg:px-4 mt-2 h-44 md:h-56 lg:h-64">
+
+                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                            <div
+                                class="w-full bg-background-light rounded-t-lg rounded-b-lg relative h-full overflow-hidden">
+                                <div id="bar-ui-0"
+                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
+                                    style="height: 0%">
+                                    <div id="bar-tooltip-0"
+                                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
+                                        0 L</div>
+                                </div>
+                            </div>
+                            <span id="bar-label-0" class="text-[10px] lg:text-xs text-text-muted font-medium">M</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                            <div class="w-full bg-background-light rounded-lg relative h-full overflow-hidden">
+                                <div id="bar-ui-1"
+                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
+                                    style="height: 0%">
+                                    <div id="bar-tooltip-1"
+                                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
+                                        0 L</div>
+                                </div>
+                            </div>
+                            <span id="bar-label-1" class="text-[10px] lg:text-xs text-text-muted font-medium">T</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                            <div class="w-full bg-background-light rounded-lg relative h-full overflow-hidden">
+                                <div id="bar-ui-2"
+                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
+                                    style="height: 0%">
+                                    <div id="bar-tooltip-2"
+                                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
+                                        0 L</div>
+                                </div>
+                            </div>
+                            <span id="bar-label-2" class="text-[10px] lg:text-xs text-text-muted font-medium">W</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                            <div
+                                class="w-full bg-background-light rounded-lg relative h-full overflow-hidden shadow-inner">
+                                <div id="bar-ui-3"
+                                    class="absolute bottom-0 left-0 w-full bg-primary transition-all duration-500 rounded-lg group-hover:brightness-110"
+                                    style="height: 0%">
+                                    <div id="bar-tooltip-3"
+                                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10 shadow-md font-bold">
+                                        0 L</div>
+                                </div>
+                            </div>
+                            <span id="bar-label-3" class="text-[10px] lg:text-xs text-text-muted font-medium">T</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                            <div class="w-full bg-background-light rounded-lg relative h-full overflow-hidden">
+                                <div id="bar-ui-4"
+                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
+                                    style="height: 0%">
+                                    <div id="bar-tooltip-4"
+                                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
+                                        0 L</div>
+                                </div>
+                            </div>
+                            <span id="bar-label-4" class="text-[10px] lg:text-xs text-text-muted font-medium">F</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                            <div class="w-full bg-background-light rounded-lg relative h-full overflow-hidden">
+                                <div id="bar-ui-5"
+                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
+                                    style="height: 0%">
+                                    <div id="bar-tooltip-5"
+                                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
+                                        0 L</div>
+                                </div>
+                            </div>
+                            <span id="bar-label-5" class="text-[10px] lg:text-xs text-text-muted font-medium">S</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                            <div
+                                class="w-full bg-background-light rounded-lg relative h-full group-hover:bg-background-light/70 transition-colors">
+                                <div id="bar-ui-6"
+                                    class="absolute bottom-0 left-0 w-full h-0 rounded-lg bg-secondary/40 group-hover:bg-secondary/70 transition-all duration-500">
+                                    <div id="bar-tooltip-6"
+                                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
+                                        0 L</div>
+                                </div>
+                            </div>
+                            <span id="bar-label-6" class="text-[10px] lg:text-xs text-text-muted font-medium">S</span>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+        </section>
+
+        <!-- Analytics Dashboard View -->
+        <section id="analytics-view" class="hidden h-full flex flex-col gap-6 lg:gap-8 w-full max-w-4xl mx-auto">
+
+            <!-- Hourly Graph Card (Duolingo Style) -->
+            <div
+                class="bg-surface-light border-b-[6px] border-x-2 border-t-2 border-[#E5E5E5] rounded-3xl p-6 lg:p-8 flex flex-col hover:border-b-[4px] hover:translate-y-[2px] transition-all cursor-pointer">
+                <h3 class="text-xl font-black text-text-main mb-6 uppercase tracking-wide">Hourly Usage</h3>
+
+                <!-- 24 Hour Chart Container -->
+                <div class="flex-grow flex items-end justify-between gap-1 w-full h-40 md:h-56">
+                    <!-- Javascript will loop and populate 24 bars here -->
+                    <script>
+                        for (let i = 0; i < 24; i++) {
+                            const timeLabel = i % 4 === 0 ? `${i}h` : ''; // Show label every 4 hrs
+                            document.write(`
+                                <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer h-full">
+                                    <div class="w-full bg-[#F0F0F0] rounded-lg relative h-full flex overflow-hidden">
+                                        <div id="hourly-bar-ui-${i}" class="absolute bottom-0 left-0 w-full bg-[#1CB0F6] group-hover:bg-[#1899D6] transition-all duration-500 rounded-lg" style="height: 0%">
+                                            <div id="hourly-bar-tooltip-${i}" class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 font-bold">0 L</div>
+                                        </div>
+                                    </div>
+                                    <span class="text-[9px] text-text-muted font-bold">${timeLabel}</span>
+                                </div>
+                            `);
+                        }
+                    </script>
+                </div>
+            </div>
+
+            <!-- 2x2 Stats Grid (Duolingo Style Cards) -->
+            <div class="grid grid-cols-2 gap-4 lg:gap-6">
+
+                <!-- Tank Level Card (Purple) -->
+                <div
+                    class="bg-surface-light border-b-[6px] border-x-2 border-t-2 border-[#CE82FF] rounded-3xl p-5 lg:p-6 flex flex-col justify-between h-40 lg:h-44 hover:border-b-[4px] hover:translate-y-[2px] transition-all cursor-pointer">
+                    <div class="flex items-center justify-between w-full">
+                        <p class="text-sm lg:text-base font-black text-[#CE82FF] uppercase tracking-wide">Tank Level</p>
+                        <div class="w-10 h-10 bg-[#CE82FF]/20 rounded-full flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[#CE82FF]">water_drop</span>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="analytics-percentage" class="text-4xl lg:text-5xl font-black text-text-main">--</span>
+                        <span class="text-xl lg:text-2xl font-bold text-text-muted">%</span>
+                    </div>
+                </div>
+
+                <!-- Daily Usage Card (Teal) -->
+                <div
+                    class="bg-surface-light border-b-[6px] border-x-2 border-t-2 border-[#58CC02] rounded-3xl p-5 lg:p-6 flex flex-col justify-between h-40 lg:h-44 hover:border-b-[4px] hover:translate-y-[2px] transition-all cursor-pointer">
+                    <div class="flex items-center justify-between w-full">
+                        <p class="text-sm lg:text-base font-black text-[#58CC02] uppercase tracking-wide">Daily Usage
+                        </p>
+                        <div class="w-10 h-10 bg-[#58CC02]/20 rounded-full flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[#58CC02]">waves</span>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="analytics-daily-usage"
+                            class="text-4xl lg:text-5xl font-black text-text-main">--</span>
+                        <span class="text-xl lg:text-2xl font-bold text-text-muted">L</span>
+                    </div>
+                </div>
+
+                <!-- Hourly Avg Card (Lime/Yellowish) -->
+                <div
+                    class="bg-surface-light border-b-[6px] border-x-2 border-t-2 border-[#FFC800] rounded-3xl p-5 lg:p-6 flex flex-col justify-between h-40 lg:h-44 hover:border-b-[4px] hover:translate-y-[2px] transition-all cursor-pointer">
+                    <div class="flex items-center justify-between w-full">
+                        <p class="text-sm lg:text-base font-black text-[#FFC800] uppercase tracking-wide">Hourly Avg</p>
+                        <div class="w-10 h-10 bg-[#FFC800]/20 rounded-full flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[#FFC800]">query_stats</span>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="analytics-hourly-avg" class="text-4xl lg:text-5xl font-black text-text-main">--</span>
+                        <span class="text-xl lg:text-2xl font-bold text-text-muted">L/h</span>
+                    </div>
+                </div>
+
+                <!-- Time to Refill Card (Blue) -->
+                <div
+                    class="bg-surface-light border-b-[6px] border-x-2 border-t-2 border-[#1CB0F6] rounded-3xl p-5 lg:p-6 flex flex-col justify-between h-40 lg:h-44 hover:border-b-[4px] hover:translate-y-[2px] transition-all cursor-pointer">
+                    <div class="flex items-center justify-between w-full">
+                        <p class="text-sm lg:text-base font-black text-[#1CB0F6] uppercase tracking-wide">Est. Time</p>
+                        <div class="w-10 h-10 bg-[#1CB0F6]/20 rounded-full flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[#1CB0F6]">schedule</span>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <!-- Duplicating the value from Home tab logic dynamically via JS -->
+                        <span id="analytics-days-left" class="text-4xl lg:text-5xl font-black text-text-main">--</span>
+                        <span class="text-xl lg:text-2xl font-bold text-text-muted">Days</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Mobile Bottom Navigation (Hidden on Desktop) -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-50 md:hidden pb-safe">
+        <nav
+            class="bg-white/90 rounded-full p-2.5 shadow-nav flex items-center justify-between backdrop-blur-xl border border-white/20">
+            <button onclick="switchTab('home')"
+                class="nav-btn-home flex items-center justify-center w-12 h-12 text-primary transition-colors bg-primary/10 rounded-2xl">
+                <span class="material-symbols-outlined text-2xl">home</span>
+            </button>
+            <button
+                class="relative w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 transform transition-transform active:scale-95">
+                <span class="material-symbols-outlined text-2xl">add</span>
+            </button>
+            <button onclick="switchTab('analytics')"
+                class="nav-btn-analytics flex items-center justify-center w-12 h-12 text-text-muted hover:text-primary transition-colors hover:bg-background-light rounded-2xl">
+                <span class="material-symbols-outlined text-2xl">query_stats</span>
+            </button>
+            <button
+                class="flex items-center justify-center w-12 h-12 text-text-muted hover:text-primary transition-colors hover:bg-background-light rounded-2xl">
+                <span class="material-symbols-outlined text-2xl">person</span>
+            </button>
+        </nav>
+    </div>
+
+</body>
+
+</html>
