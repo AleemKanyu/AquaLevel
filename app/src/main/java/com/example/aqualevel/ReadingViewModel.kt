@@ -18,7 +18,7 @@ class ReadingViewModel(application: Application) : AndroidViewModel(application)
 
     /** 
      * LiveData containing hourly readings from Room.
-     * Maps HourlyReadingEntity to the legacy Readings format if necessary, 
+     * Maps HourlyReadingEntity to the legacy Readings format if necessary,
      * or provides them directly for the Hourly Graph.
      */
     val hourlyReadings: LiveData<List<HourlyReadingEntity>>

@@ -59,6 +59,8 @@ class HomeFragment : Fragment() {
     private var lastKnownPercentage = -1
     private var isFirstLoad = true
 
+    private var currentPopup: PopupWindow? = null
+
     private fun animateWaterLevel(from: Int, to: Int, duration: Long) {
         val animator = ValueAnimator.ofInt(from, to)
         animator.duration = duration
@@ -141,6 +143,7 @@ class HomeFragment : Fragment() {
     private fun observeData() {
         viewModel.hourlyReadings.observe(viewLifecycleOwner) { readings ->
             updateCurrentLevel(readings)
+            updateTodayUsage(readings)
         }
 
         viewModel.weeklyUsage.observe(viewLifecycleOwner) { usage ->
@@ -154,7 +157,7 @@ class HomeFragment : Fragment() {
         // Get the latest reading based on hour/timestamp
         val latest = readings.maxByOrNull { it.timestamp } ?: return
         val distance = latest.distance
-        
+
         val clampedDistance = distance.coerceIn(fullDistance, emptyDistance)
         val percent = ((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0
         val safePercent = percent.coerceIn(0.0, 100.0)
@@ -169,7 +172,7 @@ class HomeFragment : Fragment() {
         }
         
         percentage.animateCountUp(safePercent.toInt(), lastDisplayedPercent, 1000, "%")
-        
+
         lastDisplayedValue = currentVolume
         
         val disableAnimation = sharedPref.getBoolean("disable_animation", false)
@@ -185,7 +188,7 @@ class HomeFragment : Fragment() {
                 animateWaterLevel(lastDisplayedPercent, safePercent.toInt(), 1000)
             }
         }
-        
+
         lastDisplayedPercent = safePercent.toInt()
 
         val waveColor = if (safePercent <= 25) {
@@ -207,6 +210,43 @@ class HomeFragment : Fragment() {
         updateWidget()
     }
 
+    private fun updateTodayUsage(readings: List<HourlyReadingEntity>) {
+        if (readings.isEmpty()) return
+        
+        val totalDistRange = emptyDistance - fullDistance
+        if (totalDistRange <= 0) return
+
+        // Calculate Today's Usage by summing drops in level
+        val sortedReadings = readings.sortedBy { it.hour.toIntOrNull() ?: 0 }
+        var todayTotalUsageDist = 0.0
+        
+        for (i in 1 until sortedReadings.size) {
+            val prev = sortedReadings[i - 1]
+            val curr = sortedReadings[i]
+            
+            // Sensor distance increases when water level drops
+            val distDiff = curr.distance - prev.distance
+            if (distDiff > 0) {
+                todayTotalUsageDist += distDiff
+            }
+        }
+
+        val todayUsageVol = (todayTotalUsageDist / totalDistRange) * tankVolume
+        
+        if (volumeUnit == "gal") {
+            val displayVol = todayUsageVol * 0.264172
+            dailyAvgValue.text = "${displayVol.toInt()} gal"
+        } else {
+            dailyAvgValue.text = "${todayUsageVol.toInt()} L"
+        }
+
+        // Update label to "TODAY'S USAGE"
+        val avgUsageCard = view?.findViewById<LinearLayout>(R.id.avgUsageCard)
+        if (avgUsageCard != null && avgUsageCard.childCount > 1) {
+            (avgUsageCard.getChildAt(1) as? TextView)?.text = "TODAY'S USAGE"
+        }
+    }
+
     private fun updateWeeklyBars(usage: List<DailyUsageEntity>) {
         val bars = listOf(mondayBar, tuesdayBar, wedBar, thursdayBar, fridayBar, saturdayBar, sundayBar)
         val maxBarHeight = dpToPx(requireContext(), 160)
@@ -216,54 +256,88 @@ class HomeFragment : Fragment() {
             val params = bar.layoutParams
             params.height = dpToPx(requireContext(), 8)
             bar.layoutParams = params
+            
+            // Re-add long click listener for usage info
+            (bar.parent as? View)?.setOnLongClickListener {
+                showUsagePopup(it, bar, usage, bars)
+                true
+            }
         }
 
         if (usage.isEmpty()) {
-            dailyAvgValue.text = if (volumeUnit == "gal") "0 gal" else "0 L"
             return
         }
 
-        // Sort by date ascending to map to bars correctly if needed, 
-        // but Requirement says retrieve last 7 and sort ascending.
+        // Sort by date ascending
         val sortedUsage = usage.sortedBy { it.date }
         
-        // Simple mapping: the last 7 days from Firestore. 
-        // We'll map them to the bars from right to left (today is the last bar).
+        // Map last 7 days from Firestore to bars from right to left (today is the last bar)
         val barCount = bars.size
         val dataCount = sortedUsage.size
-        
-        var totalUsage = 0.0
         
         for (i in 0 until dataCount) {
             if (i >= barCount) break
             val daily = sortedUsage[dataCount - 1 - i] // Get from latest
             val barIndex = barCount - 1 - i
             
-            // Usage calculated by ESP32: totalDistance
-            // We need to convert distance change to volume
             val totalDistRange = emptyDistance - fullDistance
-            val usedVolume = (daily.totalDistance / totalDistRange) * tankVolume
-            totalUsage += usedVolume
+            if (totalDistRange > 0) {
+                val usedVolume = (daily.totalDistance / totalDistRange) * tankVolume
 
-            val normalized = (usedVolume / tankVolume).coerceIn(0.0, 1.0)
-            val barHeight = (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(requireContext(), 8))
-            
-            val params = bars[barIndex].layoutParams
-            params.height = barHeight
-            bars[barIndex].layoutParams = params
-        }
-
-        val avgVolume = totalUsage / dataCount
-        if (volumeUnit == "gal") {
-            val calVal = avgVolume * 0.264172
-            dailyAvgValue.text = "${calVal.toInt()} gal"
-        } else {
-            dailyAvgValue.text = "${avgVolume.toInt()} L"
+                val normalized = (usedVolume / tankVolume).coerceIn(0.0, 1.0)
+                val barHeight = (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(requireContext(), 8))
+                
+                val params = bars[barIndex].layoutParams
+                params.height = barHeight
+                bars[barIndex].layoutParams = params
+            }
         }
     }
 
+    private fun showUsagePopup(anchorView: View, barView: View, usage: List<DailyUsageEntity>, bars: List<View>) {
+        currentPopup?.dismiss()
+        
+        val inflater = LayoutInflater.from(requireContext())
+        val popupView = inflater.inflate(R.layout.popup_usage_info, null)
+        
+        val tvDate = popupView.findViewById<TextView>(R.id.popupDate)
+        val tvValue = popupView.findViewById<TextView>(R.id.popupValue)
+        
+        val sortedUsage = usage.sortedBy { it.date }
+        val barIndex = bars.indexOf(barView)
+        val dataIndex = usage.size - (bars.size - barIndex)
+        
+        if (dataIndex >= 0 && dataIndex < usage.size) {
+            val daily = sortedUsage[dataIndex]
+            val totalDistRange = emptyDistance - fullDistance
+            val usedVol = (daily.totalDistance / totalDistRange) * tankVolume
+            val unitStr = if (volumeUnit == "gal") "gal" else "L"
+            val displayVol = if (volumeUnit == "gal") usedVol * 0.264172 else usedVol
+            
+            tvDate.text = daily.date
+            tvValue.text = "${displayVol.toInt()} $unitStr"
+        } else {
+            tvDate.text = "No Data"
+            tvValue.text = "0 $volumeUnit"
+        }
+        
+        currentPopup = PopupWindow(
+            popupView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true
+        ).apply {
+            elevation = 10f
+            animationStyle = android.R.style.Animation_Dialog
+            setBackgroundDrawable(null)
+            showAsDropDown(anchorView, 0, -anchorView.height - dpToPx(requireContext(), 60), Gravity.CENTER_HORIZONTAL)
+        }
+        
+        performHapticFeedbackCommon(anchorView)
+    }
+
     private fun refreshUI() {
-        viewModel.hourlyReadings.value?.let { updateCurrentLevel(it) }
+        viewModel.hourlyReadings.value?.let { updateCurrentLevel(it); updateTodayUsage(it) }
         viewModel.weeklyUsage.value?.let { updateWeeklyBars(it) }
     }
 

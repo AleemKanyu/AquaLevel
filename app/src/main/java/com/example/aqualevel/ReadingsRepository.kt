@@ -9,6 +9,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Repository class that abstracts access to the data sources (Firestore and Room).
@@ -38,8 +41,31 @@ class ReadingsRepository(private val readingsDao: ReadingsDao) {
      * Starts listening to Firestore updates and syncs them to Room.
      */
     fun startSyncing() {
+        listenToCurrentReading()
         listenToHourlyReadings()
-        listenToDailyUsage()
+        fetchInitialDailyHistory()
+    }
+
+    /**
+     * Listens to the main document for real-time tanker updates.
+     */
+    private fun listenToCurrentReading() {
+        sensorDataRef.addSnapshotListener { snapshot, e ->
+            if (e != null) {
+                Log.w("ReadingsRepository", "Listen to current failed.", e)
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null && snapshot.exists()) {
+                val distance = snapshot.getDouble("distance") ?: 0.0
+                val timestamp = snapshot.getLong("timestamp") ?: System.currentTimeMillis()
+                
+                CoroutineScope(Dispatchers.IO).launch {
+                    // This updates the 'readings' table which HomeFragment will now observe for the tanker level
+                    readingsDao.insert(Readings(level = distance, timestamp = timestamp))
+                }
+            }
+        }
     }
 
     private fun listenToHourlyReadings() {
@@ -59,37 +85,56 @@ class ReadingsRepository(private val readingsDao: ReadingsDao) {
                     
                     CoroutineScope(Dispatchers.IO).launch {
                         readingsDao.insertHourlyReadings(hourlyList)
+                        updateDailyUsageFromHourly(hourlyList)
                     }
                 }
             }
     }
 
-    private fun listenToDailyUsage() {
+    private suspend fun updateDailyUsageFromHourly(hourlyList: List<HourlyReadingEntity>) {
+        if (hourlyList.isEmpty()) return
+
+        val sorted = hourlyList.sortedBy { it.hour.toIntOrNull() ?: 0 }
+        var totalUsageDist = 0.0
+        
+        for (i in 1 until sorted.size) {
+            val diff = sorted[i].distance - sorted[i - 1].distance
+            if (diff > 0) {
+                totalUsageDist += diff
+            }
+        }
+
+        val latestTimestamp = sorted.maxOf { it.timestamp }
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val dateStr = sdf.format(Date(latestTimestamp))
+
+        val dailyEntry = DailyUsageEntity(
+            date = dateStr,
+            totalDistance = totalUsageDist,
+            readingCount = hourlyList.size
+        )
+
+        readingsDao.insertDailyUsages(listOf(dailyEntry))
+    }
+
+    private fun fetchInitialDailyHistory() {
         sensorDataRef.collection("daily")
             .orderBy("date", Query.Direction.DESCENDING)
             .limit(7)
-            .addSnapshotListener { snapshots, e ->
-                if (e != null) {
-                    Log.w("ReadingsRepository", "Listen failed.", e)
-                    return@addSnapshotListener
+            .get()
+            .addOnSuccessListener { snapshots ->
+                val dailyList = snapshots.documents.mapNotNull { doc ->
+                    val totalDistance = doc.getDouble("totalDistance") ?: 0.0
+                    val readingCount = doc.getLong("readingCount")?.toInt() ?: 0
+                    val date = doc.getString("date") ?: doc.id
+                    DailyUsageEntity(date = date, totalDistance = totalDistance, readingCount = readingCount)
                 }
-
-                if (snapshots != null) {
-                    val dailyList = snapshots.documents.mapNotNull { doc ->
-                        val totalDistance = doc.getDouble("totalDistance") ?: 0.0
-                        val readingCount = doc.getLong("readingCount")?.toInt() ?: 0
-                        val date = doc.getString("date") ?: doc.id
-                        DailyUsageEntity(date = date, totalDistance = totalDistance, readingCount = readingCount)
-                    }
-
-                    CoroutineScope(Dispatchers.IO).launch {
-                        readingsDao.insertDailyUsages(dailyList)
-                    }
+                CoroutineScope(Dispatchers.IO).launch {
+                    readingsDao.insertDailyUsages(dailyList)
                 }
             }
     }
 
-    // Keep old methods if they are still needed for other parts of the app
     suspend fun insert(readings: Readings) {
         readingsDao.insert(readings)
     }
