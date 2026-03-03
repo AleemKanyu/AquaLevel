@@ -123,7 +123,7 @@
         app:layout_constraintEnd_toEndOf="@+id/navbarBg"
         app:layout_constraintTop_toTopOf="@+id/navbarBg">
 
-        <ImageView
+        <com.example.aqualevel.WaterDropIconView
             android:id="@+id/imgHome"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

@@ -1,5 +1,5 @@
-#include <WiFi.h>
 #include <Firebase_ESP_Client.h>
+#include <WiFi.h>
 #include <time.h>
 
 // ================= WIFI =================
@@ -16,8 +16,8 @@
 #define ECHO_PIN 18
 
 // ================= INTERVALS =================
-#define AUTO_UPLOAD_INTERVAL 3600000UL   // 1 hour
-#define MANUAL_CHECK_INTERVAL 2000UL     // 2 seconds
+#define AUTO_UPLOAD_INTERVAL 3600000UL // 1 hour
+#define MANUAL_CHECK_INTERVAL 2000UL   // 2 seconds
 
 FirebaseData fbdo;
 FirebaseAuth auth;
@@ -26,7 +26,7 @@ FirebaseConfig config;
 unsigned long lastSend = 0;
 unsigned long lastCommandCheck = 0;
 
-// WIFI CHECK 
+// WIFI CHECK
 void ensureWiFi() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi lost, reconnecting...");
@@ -42,7 +42,7 @@ void ensureWiFi() {
   }
 }
 
-// TIME CHECK 
+// TIME CHECK
 void ensureTimeIsValid() {
   time_t now = time(nullptr);
   if (now < 1700000000) {
@@ -52,7 +52,7 @@ void ensureTimeIsValid() {
   }
 }
 
-// DISTANCE 
+// DISTANCE
 float getDistanceCM() {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
@@ -61,23 +61,22 @@ float getDistanceCM() {
   digitalWrite(TRIG_PIN, LOW);
 
   long duration = pulseIn(ECHO_PIN, HIGH, 60000);
-  if (duration == 0) return -1;
+  if (duration == 0)
+    return -1;
 
   return duration * 0.0343 / 2;
 }
 
-// MANUAL REFRESH 
+// MANUAL REFRESH
 void checkManualRefresh() {
   ensureWiFi();
   ensureTimeIsValid();
 
-  if (!Firebase.ready()) return;
+  if (!Firebase.ready())
+    return;
 
-  if (!Firebase.Firestore.getDocument(
-        &fbdo,
-        FIREBASE_PROJECT_ID,
-        "",
-        "sensorCommands/esp32_01")) {
+  if (!Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "",
+                                      "sensorCommands/esp32_01")) {
     return;
   }
 
@@ -100,31 +99,21 @@ void checkManualRefresh() {
       content.set("fields/distance/doubleValue", distance);
       content.set("fields/timestamp/integerValue", (int)time(nullptr));
 
-      Firebase.Firestore.patchDocument(
-        &fbdo,
-        FIREBASE_PROJECT_ID,
-        "",
-        "sensorData/esp32_01",
-        content.raw(),
-        "distance,timestamp"
-      );
+      Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "",
+                                       "sensorData/esp32_01", content.raw(),
+                                       "distance,timestamp");
     }
 
     FirebaseJson clearCmd;
     clearCmd.set("fields/refresh/booleanValue", false);
 
-    Firebase.Firestore.patchDocument(
-      &fbdo,
-      FIREBASE_PROJECT_ID,
-      "",
-      "sensorCommands/esp32_01",
-      clearCmd.raw(),
-      "refresh"
-    );
+    Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "",
+                                     "sensorCommands/esp32_01", clearCmd.raw(),
+                                     "refresh");
   }
 }
 
-// SETUP 
+// SETUP
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -172,7 +161,7 @@ void setup() {
   Serial.println("Firebase initialized");
 }
 
-// LOOP 
+// LOOP
 void loop() {
   if (!Firebase.ready()) {
     delay(50);
@@ -191,7 +180,8 @@ void loop() {
     ensureTimeIsValid();
 
     float distance = getDistanceCM();
-    if (distance < 0) return;
+    if (distance < 0)
+      return;
 
     Serial.print("AUTO upload distance: ");
     Serial.print(distance);
@@ -201,14 +191,25 @@ void loop() {
     content.set("fields/distance/doubleValue", distance);
     content.set("fields/timestamp/integerValue", (int)time(nullptr));
 
-    Firebase.Firestore.patchDocument(
-      &fbdo,
-      FIREBASE_PROJECT_ID,
-      "",
-      "sensorData/esp32_01",
-      content.raw(),
-      "distance,timestamp"
-    );
+    // 1. Update the main snapshot document (real-time current level)
+    Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "",
+                                     "sensorData/esp32_01", content.raw(),
+                                     "distance,timestamp");
+
+    // 2. Write to hourly_current/{HH} so apps can build usage history
+    time_t nowTime = time(nullptr);
+    struct tm timeinfo;
+    gmtime_r(&nowTime, &timeinfo);
+    char hourDocPath[64];
+    snprintf(hourDocPath, sizeof(hourDocPath),
+             "sensorData/esp32_01/hourly_current/%02d", timeinfo.tm_hour);
+
+    Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "",
+                                     hourDocPath, content.raw(),
+                                     "distance,timestamp");
+
+    Serial.print("Hourly snapshot written to: ");
+    Serial.println(hourDocPath);
   }
 
   delay(20);

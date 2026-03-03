@@ -61,6 +61,14 @@ class HomeFragment : Fragment() {
 
     private var currentPopup: PopupWindow? = null
 
+    // Maps bar index (0=Mon..6=Sun) → date string "yyyy-MM-dd"
+    private var barDateMap: Map<Int, String> = emptyMap()
+
+    private var currentLiveDistance: Double = -1.0
+    private var lastHourlyDistance: Double = -1.0
+    private var todayBaseUsageDist: Double = 0.0
+    private var cachedWeeklyUsage: List<DailyUsageEntity> = emptyList()
+
     private fun animateWaterLevel(from: Int, to: Int, duration: Long) {
         val animator = ValueAnimator.ofInt(from, to)
         animator.duration = duration
@@ -141,22 +149,43 @@ class HomeFragment : Fragment() {
     }
 
     private fun observeData() {
+        viewModel.allReadings.observe(viewLifecycleOwner) { readings ->
+            val latest = readings.firstOrNull()
+            if (latest != null) {
+                currentLiveDistance = latest.level
+                updateCurrentLevelDisplay()
+                refreshUsageDisplay()
+            }
+        }
+
         viewModel.hourlyReadings.observe(viewLifecycleOwner) { readings ->
-            updateCurrentLevel(readings)
-            updateTodayUsage(readings)
+            if (readings.isEmpty()) return@observe
+            val sortedReadings = readings.sortedBy { it.hour.toIntOrNull() ?: 0 }
+            
+            var baseDist = 0.0
+            for (i in 1 until sortedReadings.size) {
+                val prev = sortedReadings[i - 1]
+                val curr = sortedReadings[i]
+                val distDiff = curr.distance - prev.distance
+                if (distDiff > 0) {
+                    baseDist += distDiff
+                }
+            }
+            todayBaseUsageDist = baseDist
+            lastHourlyDistance = sortedReadings.last().distance
+            refreshUsageDisplay()
         }
 
         viewModel.weeklyUsage.observe(viewLifecycleOwner) { usage ->
-            updateWeeklyBars(usage)
+            cachedWeeklyUsage = usage
+            refreshUsageDisplay()
         }
     }
 
-    private fun updateCurrentLevel(readings: List<HourlyReadingEntity>) {
-        if (readings.isEmpty()) return
+    private fun updateCurrentLevelDisplay() {
+        if (currentLiveDistance < 0) return
         
-        // Get the latest reading based on hour/timestamp
-        val latest = readings.maxByOrNull { it.timestamp } ?: return
-        val distance = latest.distance
+        val distance = currentLiveDistance
 
         val clampedDistance = distance.coerceIn(fullDistance, emptyDistance)
         val percent = ((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0
@@ -210,28 +239,14 @@ class HomeFragment : Fragment() {
         updateWidget()
     }
 
-    private fun updateTodayUsage(readings: List<HourlyReadingEntity>) {
-        if (readings.isEmpty()) return
-        
+    private fun refreshUsageDisplay() {
         val totalDistRange = emptyDistance - fullDistance
         if (totalDistRange <= 0) return
 
-        // Calculate Today's Usage by summing drops in level
-        val sortedReadings = readings.sortedBy { it.hour.toIntOrNull() ?: 0 }
-        var todayTotalUsageDist = 0.0
-        
-        for (i in 1 until sortedReadings.size) {
-            val prev = sortedReadings[i - 1]
-            val curr = sortedReadings[i]
-            
-            // Sensor distance increases when water level drops
-            val distDiff = curr.distance - prev.distance
-            if (distDiff > 0) {
-                todayTotalUsageDist += distDiff
-            }
-        }
-
-        val todayUsageVol = (todayTotalUsageDist / totalDistRange) * tankVolume
+        // Today's usage = direct sum of all recorded hourly drops,
+        // matching the calculation in AnalyticsFragment exactly.
+        val totalTodayDist = todayBaseUsageDist
+        val todayUsageVol = (totalTodayDist / totalDistRange) * tankVolume
         
         if (volumeUnit == "gal") {
             val displayVol = todayUsageVol * 0.264172
@@ -245,82 +260,185 @@ class HomeFragment : Fragment() {
         if (avgUsageCard != null && avgUsageCard.childCount > 1) {
             (avgUsageCard.getChildAt(1) as? TextView)?.text = "TODAY'S USAGE"
         }
+
+        updateWeeklyBars(cachedWeeklyUsage, totalTodayDist)
     }
 
-    private fun updateWeeklyBars(usage: List<DailyUsageEntity>) {
+    private fun updateWeeklyBars(usage: List<DailyUsageEntity>, totalTodayDist: Double) {
+        // Bars in layout order: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
         val bars = listOf(mondayBar, tuesdayBar, wedBar, thursdayBar, fridayBar, saturdayBar, sundayBar)
-        val maxBarHeight = dpToPx(requireContext(), 160)
+        val dayLabels = listOf(
+            view?.findViewById<TextView>(R.id.monday),
+            view?.findViewById<TextView>(R.id.tuesday),
+            view?.findViewById<TextView>(R.id.wed),
+            view?.findViewById<TextView>(R.id.thursday),
+            view?.findViewById<TextView>(R.id.friday),
+            view?.findViewById<TextView>(R.id.saturday),
+            view?.findViewById<TextView>(R.id.sunday)
+        )
+        val maxBarHeightPx = dpToPx(requireContext(), 160)
+        val totalDistRange = emptyDistance - fullDistance
 
-        // Reset bars
-        bars.forEach { bar ->
+        // Map Calendar.DAY_OF_WEEK (Sun=1..Sat=7) → bar index (Mon=0..Sun=6)
+        val cal = Calendar.getInstance()
+        val calDay = cal.get(Calendar.DAY_OF_WEEK)
+        // Calendar: 1=Sun,2=Mon,3=Tue,4=Wed,5=Thu,6=Fri,7=Sat
+        // Bar index: Mon=0,Tue=1,Wed=2,Thu=3,Fri=4,Sat=5,Sun=6
+        val todayBarIndex = when (calDay) {
+            Calendar.MONDAY    -> 0
+            Calendar.TUESDAY   -> 1
+            Calendar.WEDNESDAY -> 2
+            Calendar.THURSDAY  -> 3
+            Calendar.FRIDAY    -> 4
+            Calendar.SATURDAY  -> 5
+            Calendar.SUNDAY    -> 6
+            else               -> 0
+        }
+
+        // Colors
+        val normalColor    = ContextCompat.getColor(requireContext(), R.color.duo_blue)
+        val todayColor     = ContextCompat.getColor(requireContext(), R.color.bar_today)
+        val labelNormal    = ContextCompat.getColor(requireContext(), R.color.duo_text_secondary)
+        val labelToday     = ContextCompat.getColor(requireContext(), R.color.duo_blue)
+
+        // Build barDateMap: each bar index → its date string"yyyy-MM-dd"
+        val dateMap = mutableMapOf<Int, String>()
+        val sdfBuild = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        // Monday of current week
+        val weekStartCal = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0);      set(Calendar.MILLISECOND, 0)
+        }
+        for (i in 0..todayBarIndex) {
+            val dayCal = weekStartCal.clone() as Calendar
+            dayCal.add(Calendar.DAY_OF_YEAR, i)
+            dateMap[i] = sdfBuild.format(dayCal.time)
+        }
+        barDateMap = dateMap
+
+        // Reset: zero all bars; hide bars that are in the future (after today in this week)
+        bars.forEachIndexed { i, bar ->
             val params = bar.layoutParams
-            params.height = dpToPx(requireContext(), 8)
+            params.height = 0
             bar.layoutParams = params
-            
-            // Re-add long click listener for usage info
+            // Tint: today gets special color, past/today-within-week get normal blue
+            bar.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                if (i == todayBarIndex) todayColor else normalColor
+            )
+            // Day labels: highlight today
+            dayLabels[i]?.setTextColor(if (i == todayBarIndex) labelToday else labelNormal)
+            // Long-click popup
             (bar.parent as? View)?.setOnLongClickListener {
-                showUsagePopup(it, bar, usage, bars)
+                showUsagePopup(it, bar, usage, bars, totalTodayDist, todayBarIndex)
                 true
             }
         }
 
-        if (usage.isEmpty()) {
-            return
+        if (totalDistRange <= 0) return
+
+        // Build volume array indexed by bar position (Mon=0..Sun=6)
+        // Only populate bars from Mon(0) up to todayBarIndex — future days stay 0/hidden
+        val volumes = DoubleArray(7) { 0.0 }
+
+        // Today's bar: always from live hourly sum (most accurate)
+        if (totalTodayDist > 0) {
+            volumes[todayBarIndex] = (totalTodayDist / totalDistRange) * tankVolume
         }
 
-        // Sort by date ascending
-        val sortedUsage = usage.sortedBy { it.date }
-        
-        // Map last 7 days from Firestore to bars from right to left (today is the last bar)
-        val barCount = bars.size
-        val dataCount = sortedUsage.size
-        
-        for (i in 0 until dataCount) {
-            if (i >= barCount) break
-            val daily = sortedUsage[dataCount - 1 - i] // Get from latest
-            val barIndex = barCount - 1 - i
-            
-            val totalDistRange = emptyDistance - fullDistance
-            if (totalDistRange > 0) {
-                val usedVolume = (daily.totalDistance / totalDistRange) * tankVolume
+        // Past days: from daily Firestore/Room records.
+        // Each record has a date string (yyyy-MM-dd). We map it to a bar index.
+        if (usage.isNotEmpty()) {
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            // Find the Monday of the current week
+            val weekStart = Calendar.getInstance().apply {
+                set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0);      set(Calendar.MILLISECOND, 0)
+            }.time
 
-                val normalized = (usedVolume / tankVolume).coerceIn(0.0, 1.0)
-                val barHeight = (maxBarHeight * normalized).toInt().coerceAtLeast(dpToPx(requireContext(), 8))
-                
-                val params = bars[barIndex].layoutParams
-                params.height = barHeight
-                bars[barIndex].layoutParams = params
+            for (daily in usage) {
+                val date = try { sdf.parse(daily.date) } catch (e: Exception) { null } ?: continue
+                // Only include days within this week (Mon..today)
+                if (date.before(weekStart)) continue
+
+                val dayCal = Calendar.getInstance().apply { time = date }
+                val dayOfWeek = dayCal.get(Calendar.DAY_OF_WEEK)
+                val barIdx = when (dayOfWeek) {
+                    Calendar.MONDAY    -> 0
+                    Calendar.TUESDAY   -> 1
+                    Calendar.WEDNESDAY -> 2
+                    Calendar.THURSDAY  -> 3
+                    Calendar.FRIDAY    -> 4
+                    Calendar.SATURDAY  -> 5
+                    Calendar.SUNDAY    -> 6
+                    else               -> -1
+                }
+                if (barIdx < 0 || barIdx > todayBarIndex) continue  // skip future bars
+                // Skip today's Firestore entry — live hourly data is more accurate
+                if (barIdx == todayBarIndex) continue
+
+                if (daily.totalDistance > 0) {
+                    volumes[barIdx] = (daily.totalDistance / totalDistRange) * tankVolume
+                }
             }
+        }
+
+        // Render bars: height proportional to full tank volume (e.g. 1000L / 2000L tank = 50%)
+        for (i in 0..6) {
+            // Bars past today in the current week stay invisible (height 0)
+            if (i > todayBarIndex) continue
+            val barHeight = if (volumes[i] > 0) {
+                val normalized = (volumes[i] / tankVolume).coerceIn(0.0, 1.0)
+                (maxBarHeightPx * normalized).toInt().coerceAtLeast(dpToPx(requireContext(), 6))
+            } else {
+                0   // No data for this day yet
+            }
+            val params = bars[i].layoutParams
+            params.height = barHeight
+            bars[i].layoutParams = params
         }
     }
 
-    private fun showUsagePopup(anchorView: View, barView: View, usage: List<DailyUsageEntity>, bars: List<View>) {
+    private fun showUsagePopup(
+        anchorView: View,
+        barView: View,
+        usage: List<DailyUsageEntity>,
+        bars: List<View>,
+        totalTodayDist: Double,
+        todayBarIndex: Int
+    ) {
         currentPopup?.dismiss()
-        
+
         val inflater = LayoutInflater.from(requireContext())
         val popupView = inflater.inflate(R.layout.popup_usage_info, null)
-        
-        val tvDate = popupView.findViewById<TextView>(R.id.popupDate)
+        val tvDate  = popupView.findViewById<TextView>(R.id.popupDate)
         val tvValue = popupView.findViewById<TextView>(R.id.popupValue)
-        
-        val sortedUsage = usage.sortedBy { it.date }
+
         val barIndex = bars.indexOf(barView)
-        val dataIndex = usage.size - (bars.size - barIndex)
-        
-        if (dataIndex >= 0 && dataIndex < usage.size) {
-            val daily = sortedUsage[dataIndex]
-            val totalDistRange = emptyDistance - fullDistance
-            val usedVol = (daily.totalDistance / totalDistRange) * tankVolume
-            val unitStr = if (volumeUnit == "gal") "gal" else "L"
-            val displayVol = if (volumeUnit == "gal") usedVol * 0.264172 else usedVol
-            
-            tvDate.text = daily.date
-            tvValue.text = "${displayVol.toInt()} $unitStr"
+        val dateStr  = barDateMap[barIndex]          // the real calendar date for this bar
+        val totalDistRange = emptyDistance - fullDistance
+        val unitStr = if (volumeUnit == "gal") "gal" else "L"
+
+        if (dateStr == null || totalDistRange <= 0) {
+            tvDate.text  = "No Data"
+            tvValue.text = "0 $unitStr"
         } else {
-            tvDate.text = "No Data"
-            tvValue.text = "0 $volumeUnit"
+            tvDate.text = dateStr
+
+            val distanceToUse = if (barIndex == todayBarIndex) {
+                // Today: always use the live hourly accumulation
+                totalTodayDist
+            } else {
+                // Past day: look up by matching date string in the usage list
+                usage.firstOrNull { it.date == dateStr }?.totalDistance ?: 0.0
+            }
+
+            val usedVol    = (distanceToUse / totalDistRange) * tankVolume
+            val displayVol = if (volumeUnit == "gal") usedVol * 0.264172 else usedVol
+            tvValue.text = "${displayVol.toInt()} $unitStr"
         }
-        
+
         currentPopup = PopupWindow(
             popupView,
             ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -332,13 +450,14 @@ class HomeFragment : Fragment() {
             setBackgroundDrawable(null)
             showAsDropDown(anchorView, 0, -anchorView.height - dpToPx(requireContext(), 60), Gravity.CENTER_HORIZONTAL)
         }
-        
+
         performHapticFeedbackCommon(anchorView)
     }
 
     private fun refreshUI() {
-        viewModel.hourlyReadings.value?.let { updateCurrentLevel(it); updateTodayUsage(it) }
-        viewModel.weeklyUsage.value?.let { updateWeeklyBars(it) }
+        // Just trigger observer updates since they use cached values
+        refreshUsageDisplay()
+        updateCurrentLevelDisplay()
     }
 
     private fun updateWidget() {

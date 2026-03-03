@@ -144,7 +144,11 @@ class AnalyticsFragment : Fragment() {
             }
         }
 
-        hourlyUsageGraph.setData(hourlyUsage.toList())
+        // Trim to current hour + 1 so future hours are never shown
+        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        val trimmedUsage = hourlyUsage.take(currentHour + 1)   // indices 0..currentHour
+
+        hourlyUsageGraph.setData(trimmedUsage.toList(), currentHour)
         
         val todayUsageVol = (todayTotalUsageDist / totalDistRange) * tankVolume
         
@@ -175,8 +179,8 @@ class AnalyticsFragment : Fragment() {
                 val avgDailyVol = (weightedAvgDailyDist / totalDistRange) * tankVolume
 
                 // Hourly Average stat (Today's performance)
-                val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY) + 1
-                val hourlyAvgVol = todayUsageVol / currentHour
+                val currentHour2 = Calendar.getInstance().get(Calendar.HOUR_OF_DAY) + 1
+                val hourlyAvgVol = todayUsageVol / currentHour2
                 
                 if (volumeUnit == "gal") {
                     hourlyAvgText.animateCountUp((hourlyAvgVol * 0.264172).toInt(), 0, 1000)

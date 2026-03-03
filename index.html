@@ -78,11 +78,17 @@
         const fullDistance = 20.0;
         const tankVolume = 2000.0; // Liters
 
+        let currentLiveDistance = -1;
+        let todayBaseUsageDist = 0;
+        let lastHourlyDistance = -1;
+        let weeklyDaysData = [];
+
         // Listen for real-time updates on the Tanker level
         onSnapshot(sensorDataRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const distance = data.distance || 0;
+                currentLiveDistance = distance;
 
                 // Calculate true percentage matching the Android app logic
                 // percent = ((emptyDistance - min(max(distance, fullDistance), emptyDistance)) / (emptyDistance - fullDistance)) * 100.0
@@ -104,6 +110,10 @@
                 if (analyticsPercentage) {
                     analyticsPercentage.innerText = `${percentage}`;
                 }
+
+                if (typeof updateLiveUsage === "function") {
+                    updateLiveUsage();
+                }
             } else {
                 console.log("No such document!");
             }
@@ -115,24 +125,45 @@
             const q = query(dailyColRef, orderBy("date", "desc"), limit(7));
             const querySnapshot = await getDocs(q);
 
-            let totalUsageSum = 0;
-            const days = [];
+            weeklyDaysData = [];
 
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
-
-                // Ensure date and totalDistance exist. Use Document ID for date string default.
                 const safeDate = data.date || docSnap.id;
                 const safeTotalDist = data.totalDistance || 0;
+                weeklyDaysData.push({ date: safeDate, totalDistance: safeTotalDist, readingCount: data.readingCount || 0 });
+            });
 
-                days.push({ date: safeDate, totalDistance: safeTotalDist, readingCount: data.readingCount || 0 });
+            weeklyDaysData.sort((a, b) => a.date.localeCompare(b.date));
+            updateLiveUsage();
+        }
 
-                // Calculate actual volume used today matching Android logic
-                // volume = (totalDistance / (emptyDistance - fullDistance)) * tankVolume
-                const totalDistRange = emptyDistance - fullDistance;
-                if (totalDistRange > 0 && safeTotalDist > 0) {
-                    const usedVolume = (safeTotalDist / totalDistRange) * tankVolume;
-                    totalUsageSum += usedVolume;
+        function updateWeeklyGraphDisplay(totalTodayDist) {
+            let totalUsageSum = 0;
+            const totalDistRange = emptyDistance - fullDistance;
+
+            // Calculate total usage sum over tracked days
+            // For today, use totalTodayDist instead of stored daily total if it's greater
+
+            const last7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`; // Fix UTC offset issue
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
+                last7Days.push({ date: dateStr, label: dayName });
+            }
+
+            weeklyDaysData.forEach(d => {
+                let distToUse = d.totalDistance;
+                if (d.date === last7Days[6].date && totalTodayDist > distToUse) {
+                    distToUse = totalTodayDist;
+                }
+                if (totalDistRange > 0 && distToUse > 0) {
+                    totalUsageSum += (distToUse / totalDistRange) * tankVolume;
                 }
             });
 
@@ -143,12 +174,10 @@
                 totalUsageText.innerHTML = `${Math.round(totalUsageSum)} <span class="text-sm font-medium text-text-muted ml-0.5">L</span>`;
             }
 
-            // Based on average daily usage, calculate est days left assuming tank capacity
-            const averageUsage = days.length > 0 ? (totalUsageSum / days.length) : 0;
+            // Based on average daily usage, calculate est days left
+            const averageUsage = weeklyDaysData.length > 0 ? (totalUsageSum / weeklyDaysData.length) : 0;
             let daysLeft = 0;
             if (averageUsage > 0) {
-                // Assuming current filled tank capacity for true days left matching real life
-                // But for simplicity of matching the dashboard, we'll do tankVolume / averageUsage
                 daysLeft = Math.round(tankVolume / averageUsage);
             }
             daysLeftText.innerHTML = `~${daysLeft} <span class="text-sm font-medium text-text-muted">days</span>`;
@@ -158,21 +187,6 @@
             if (analyticsDaysLeft) {
                 analyticsDaysLeft.innerText = `~${daysLeft}`;
             }
-
-            // Sort days by date string ascending (oldest to newest) to map left to right on the chart
-            days.sort((a, b) => a.date.localeCompare(b.date));
-
-            // Generate last 7 days array dynamically to always match the current week properly
-            const last7Days = [];
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
-                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0); // M, T, W, etc.
-                last7Days.push({ date: dateStr, label: dayName });
-            }
-
-            const totalDistRange = emptyDistance - fullDistance;
 
             for (let i = 0; i < 7; i++) {
                 const barUI = document.getElementById(`bar-ui-${i}`);
@@ -185,12 +199,18 @@
                 labelUI.innerText = last7Days[i].label;
 
                 // Find if there's data for this strict date
-                const dayData = days.find(d => d.date === targetDate);
+                const dayData = weeklyDaysData.find(d => d.date === targetDate);
 
+                let usedVolume = 0;
                 if (dayData && totalDistRange > 0) {
-                    const usedVolume = (dayData.totalDistance / totalDistRange) * tankVolume;
-                    const visualPercent = Math.max(5, Math.min(100, (usedVolume / tankVolume) * 100));
+                    usedVolume = (dayData.totalDistance / totalDistRange) * tankVolume;
+                }
+                if (i === 6 && totalTodayDist > 0 && (totalTodayDist / totalDistRange) * tankVolume > usedVolume) {
+                    usedVolume = (totalTodayDist / totalDistRange) * tankVolume;
+                }
 
+                if (usedVolume > 0) {
+                    const visualPercent = Math.max(5, Math.min(100, (usedVolume / tankVolume) * 100));
                     barUI.style.height = `${visualPercent}%`;
                     tooltipUI.innerText = `${Math.round(usedVolume)} L`;
                 } else {
@@ -200,10 +220,31 @@
                 }
 
                 // highlight the current day text if it's the last one
+                const barContainerUI = barUI.parentElement;
+                const columnWrapperUI = barContainerUI.parentElement;
+
+                // Ensure column wrapper has h-full so it doesn't collapse
+                if (!columnWrapperUI.classList.contains("h-full")) {
+                    columnWrapperUI.classList.add("h-full");
+                }
+
                 if (i === 6) {
-                    labelUI.className = "text-[10px] lg:text-xs font-bold text-primary";
+                    // Today's bar: use primary teal color
+                    labelUI.className = "text-[10px] lg:text-xs font-bold";
+                    labelUI.style.color = "#5FA7A7";
+                    barUI.style.backgroundColor = "#5FA7A7";
+                    tooltipUI.className = "absolute -top-8 left-1/2 -translate-x-1/2 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-20 font-bold shadow-md";
+                    tooltipUI.style.backgroundColor = "#5FA7A7";
+                    barContainerUI.className = "w-full rounded-lg relative h-full overflow-hidden";
+                    barContainerUI.style.backgroundColor = "rgba(95,167,167,0.12)";
                 } else {
-                    labelUI.className = "text-[10px] lg:text-xs text-text-muted font-medium";
+                    // Past days: use secondary blue-grey at 60% opacity
+                    labelUI.className = "text-[10px] lg:text-xs font-medium";
+                    labelUI.style.color = "#64748B";
+                    barUI.style.backgroundColor = "rgba(161,201,241,0.7)";
+                    tooltipUI.className = "absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-700 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-20";
+                    barContainerUI.className = "w-full rounded-lg relative h-full overflow-hidden";
+                    barContainerUI.style.backgroundColor = "rgba(241,245,249,1)";
                 }
             }
         }
@@ -249,7 +290,23 @@
                 }
             }
 
-            const todayUsageVol = (todayTotalUsageDist / totalDistRange) * tankVolume;
+            if (readings.length > 0) {
+                lastHourlyDistance = readings[readings.length - 1].distance;
+            }
+
+            todayBaseUsageDist = todayTotalUsageDist;
+            updateLiveUsage();
+            populateHourlyGraph(hourlyUsage);
+        }
+
+        function updateLiveUsage() {
+            const totalDistRange = emptyDistance - fullDistance;
+            if (totalDistRange <= 0) return;
+
+            // Today's usage = direct sum of all recorded hourly drops.
+            // This matches "sum of all usage hours" as requested.
+            const totalTodayDist = todayBaseUsageDist;
+            const todayUsageVol = (totalTodayDist / totalDistRange) * tankVolume;
 
             // Populate Analytics Cards
             const analyticsDailyUsage = document.getElementById("analytics-daily-usage");
@@ -257,22 +314,14 @@
                 analyticsDailyUsage.innerText = Math.round(todayUsageVol);
             }
 
-            const currentHour = new Date().getHours() + 1; // 1-based to avoid div/0 early in day
-            const hourlyAvgVol = todayUsageVol / currentHour;
+            const hoursWithData = Math.max(1, new Date().getHours());
+            const hourlyAvgVol = todayUsageVol / hoursWithData;
             const analyticsHourlyAvg = document.getElementById("analytics-hourly-avg");
             if (analyticsHourlyAvg) {
                 analyticsHourlyAvg.innerText = Math.round(hourlyAvgVol);
             }
 
-            // Estimate Time to Refill based on active daily avg (from the standard fetchDaily history)
-            // But we will re-fetch a quick average here for self-containment 
-            // In Android app this uses moving average from daily usage list. We'll approximate using today's avg if daily hasn't loaded yet.
-            const averageDailyUsageVolStr = document.getElementById("days-left-text")?.innerText || "";
-            // Relying partially on the other function for time estimate, or we can recalculate:
-            // Assuming tankVolume / averageUsage
-
-            // Build the Hourly Graph
-            populateHourlyGraph(hourlyUsage);
+            updateWeeklyGraphDisplay(totalTodayDist);
         }
 
         let hourlyChartInstance = null;
@@ -586,14 +635,14 @@
                 <!-- Stat Cards (Flex / Grid across the top) -->
                 <div class="grid grid-cols-2 gap-4 lg:gap-6">
                     <div
-                        class="bg-surface-light p-5 lg:p-6 lg:px-8 rounded-3xl shadow-soft flex flex-col justify-between h-32 lg:h-36 relative overflow-hidden group border border-background-light hover:shadow-lg transition-shadow cursor-pointer">
+                        class="bg-surface-light p-5 lg:p-6 lg:px-8 rounded-3xl flex flex-col justify-between h-32 lg:h-36 relative overflow-hidden group border-b-[6px] border-x-2 border-t-2 border-[#58CC02] hover:border-b-[4px] hover:translate-y-[2px] transition-all cursor-pointer shadow-sm">
                         <div
                             class="absolute -right-4 -top-4 w-16 h-16 bg-primary/5 rounded-full blur-xl group-hover:scale-[2.5] transition-transform duration-700">
                         </div>
                         <div class="relative z-10 flex items-center justify-between">
                             <div>
                                 <span
-                                    class="material-symbols-outlined text-primary text-2xl lg:text-3xl mb-2 lg:mb-3">waves</span>
+                                    class="material-symbols-outlined text-[#58CC02] text-2xl lg:text-3xl mb-2 lg:mb-3">waves</span>
                                 <p class="text-[10px] lg:text-xs text-text-muted font-bold uppercase tracking-widest">
                                     Total Usage</p>
                             </div>
@@ -605,13 +654,13 @@
                     </div>
 
                     <div
-                        class="bg-surface-light p-5 lg:p-6 lg:px-8 rounded-3xl shadow-soft flex flex-col justify-between h-32 lg:h-36 relative overflow-hidden group border border-background-light hover:shadow-lg transition-shadow cursor-pointer">
+                        class="bg-surface-light p-5 lg:p-6 lg:px-8 rounded-3xl flex flex-col justify-between h-32 lg:h-36 relative overflow-hidden group border-b-[6px] border-x-2 border-t-2 border-[#1CB0F6] hover:border-b-[4px] hover:translate-y-[2px] transition-all cursor-pointer shadow-sm">
                         <div
                             class="absolute -right-4 -top-4 w-16 h-16 bg-secondary/10 rounded-full blur-xl group-hover:scale-[2.5] transition-transform duration-700">
                         </div>
                         <div class="relative z-10">
                             <span
-                                class="material-symbols-outlined text-secondary text-2xl lg:text-3xl mb-2 lg:mb-3">schedule</span>
+                                class="material-symbols-outlined text-[#1CB0F6] text-2xl lg:text-3xl mb-2 lg:mb-3">schedule</span>
                             <p class="text-[10px] lg:text-xs text-text-muted font-bold uppercase tracking-widest">Est.
                                 Days Left</p>
                         </div>
@@ -619,7 +668,7 @@
                             <span id="days-left-text" class="text-2xl lg:text-3xl font-bold text-text-main">-- <span
                                     class="text-sm font-medium text-text-muted">days</span></span>
                             <div
-                                class="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-highlight flex items-center justify-center shadow-lg shadow-highlight/30 group-hover:-translate-y-1 transition-transform">
+                                class="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-[#1CB0F6] flex items-center justify-center shadow-lg shadow-[#1CB0F6]/30 group-hover:-translate-y-1 transition-transform">
                                 <span
                                     class="material-symbols-outlined text-white text-base lg:text-xl">trending_up</span>
                             </div>
@@ -629,7 +678,7 @@
 
                 <!-- Chart Section -->
                 <section
-                    class="bg-surface-light rounded-4xl p-6 lg:p-8 shadow-soft transition-colors duration-300 flex-grow flex flex-col hover:shadow-lg">
+                    class="bg-surface-light rounded-4xl p-6 lg:p-8 flex-grow flex flex-col border-b-[6px] border-x-2 border-t-2 border-[#E5E5E5] hover:border-b-[4px] hover:translate-y-[2px] transition-all cursor-pointer shadow-sm">
                     <div class="flex justify-between items-start mb-6">
                         <div>
                             <div class="flex items-center gap-2 mb-1">
@@ -653,12 +702,12 @@
                     <div
                         class="flex-grow flex items-end justify-between gap-3 lg:gap-6 pb-2 px-1 lg:px-4 mt-2 h-44 md:h-56 lg:h-64">
 
-                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                        <div class="flex flex-col items-center gap-2 w-full h-full group relative cursor-pointer">
                             <div
                                 class="w-full bg-background-light rounded-t-lg rounded-b-lg relative h-full overflow-hidden">
                                 <div id="bar-ui-0"
-                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
-                                    style="height: 0%">
+                                    class="absolute bottom-0 left-0 w-full transition-all duration-500 rounded-lg"
+                                    style="height: 0%; background-color: rgba(161,201,241,0.6)">
                                     <div id="bar-tooltip-0"
                                         class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
                                         0 L</div>
@@ -667,11 +716,11 @@
                             <span id="bar-label-0" class="text-[10px] lg:text-xs text-text-muted font-medium">M</span>
                         </div>
 
-                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                        <div class="flex flex-col items-center gap-2 w-full h-full group relative cursor-pointer">
                             <div class="w-full bg-background-light rounded-lg relative h-full overflow-hidden">
                                 <div id="bar-ui-1"
-                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
-                                    style="height: 0%">
+                                    class="absolute bottom-0 left-0 w-full transition-all duration-500 rounded-lg"
+                                    style="height: 0%; background-color: rgba(161,201,241,0.6)">
                                     <div id="bar-tooltip-1"
                                         class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
                                         0 L</div>
@@ -680,11 +729,11 @@
                             <span id="bar-label-1" class="text-[10px] lg:text-xs text-text-muted font-medium">T</span>
                         </div>
 
-                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                        <div class="flex flex-col items-center gap-2 w-full h-full group relative cursor-pointer">
                             <div class="w-full bg-background-light rounded-lg relative h-full overflow-hidden">
                                 <div id="bar-ui-2"
-                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
-                                    style="height: 0%">
+                                    class="absolute bottom-0 left-0 w-full transition-all duration-500 rounded-lg"
+                                    style="height: 0%; background-color: rgba(161,201,241,0.6)">
                                     <div id="bar-tooltip-2"
                                         class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
                                         0 L</div>
@@ -693,12 +742,12 @@
                             <span id="bar-label-2" class="text-[10px] lg:text-xs text-text-muted font-medium">W</span>
                         </div>
 
-                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                        <div class="flex flex-col items-center gap-2 w-full h-full group relative cursor-pointer">
                             <div
                                 class="w-full bg-background-light rounded-lg relative h-full overflow-hidden shadow-inner">
                                 <div id="bar-ui-3"
-                                    class="absolute bottom-0 left-0 w-full bg-primary transition-all duration-500 rounded-lg group-hover:brightness-110"
-                                    style="height: 0%">
+                                    class="absolute bottom-0 left-0 w-full transition-all duration-500 rounded-lg"
+                                    style="height: 0%; background-color: rgba(161,201,241,0.6)">
                                     <div id="bar-tooltip-3"
                                         class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10 shadow-md font-bold">
                                         0 L</div>
@@ -707,11 +756,11 @@
                             <span id="bar-label-3" class="text-[10px] lg:text-xs text-text-muted font-medium">T</span>
                         </div>
 
-                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                        <div class="flex flex-col items-center gap-2 w-full h-full group relative cursor-pointer">
                             <div class="w-full bg-background-light rounded-lg relative h-full overflow-hidden">
                                 <div id="bar-ui-4"
-                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
-                                    style="height: 0%">
+                                    class="absolute bottom-0 left-0 w-full transition-all duration-500 rounded-lg"
+                                    style="height: 0%; background-color: rgba(161,201,241,0.6)">
                                     <div id="bar-tooltip-4"
                                         class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
                                         0 L</div>
@@ -720,11 +769,11 @@
                             <span id="bar-label-4" class="text-[10px] lg:text-xs text-text-muted font-medium">F</span>
                         </div>
 
-                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                        <div class="flex flex-col items-center gap-2 w-full h-full group relative cursor-pointer">
                             <div class="w-full bg-background-light rounded-lg relative h-full overflow-hidden">
                                 <div id="bar-ui-5"
-                                    class="absolute bottom-0 left-0 w-full bg-secondary/40 group-hover:bg-opacity-80 transition-all duration-500 rounded-lg group-hover:bg-secondary/70"
-                                    style="height: 0%">
+                                    class="absolute bottom-0 left-0 w-full transition-all duration-500 rounded-lg"
+                                    style="height: 0%; background-color: rgba(161,201,241,0.6)">
                                     <div id="bar-tooltip-5"
                                         class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
                                         0 L</div>
@@ -733,11 +782,12 @@
                             <span id="bar-label-5" class="text-[10px] lg:text-xs text-text-muted font-medium">S</span>
                         </div>
 
-                        <div class="flex flex-col items-center gap-2 w-full group relative cursor-pointer">
+                        <div class="flex flex-col items-center gap-2 w-full h-full group relative cursor-pointer">
                             <div
                                 class="w-full bg-background-light rounded-lg relative h-full group-hover:bg-background-light/70 transition-colors">
                                 <div id="bar-ui-6"
-                                    class="absolute bottom-0 left-0 w-full h-0 rounded-lg bg-secondary/40 group-hover:bg-secondary/70 transition-all duration-500">
+                                    class="absolute bottom-0 left-0 w-full rounded-lg transition-all duration-500"
+                                    style="height: 0%; background-color: #5FA7A7">
                                     <div id="bar-tooltip-6"
                                         class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
                                         0 L</div>

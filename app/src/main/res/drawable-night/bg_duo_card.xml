@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Shadow layer: slightly lighter than the card so it's visible as a raised bottom edge -->
+    <!-- Shadow layer: lighter than card to create raised Duolingo-style bottom border -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#3A3A3A" />
+            <solid android:color="#3D3D3D" />
             <corners android:radius="16dp" />
         </shape>
     </item>
-    <!-- Main Card Layer: lifted by 4dp to expose the shadow below -->
+    <!-- Main Card Layer lifted 4dp to expose shadow edge -->
     <item android:bottom="4dp">
         <shape android:shape="rectangle">
             <solid android:color="#1E1E1E" />

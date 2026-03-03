@@ -52,6 +52,7 @@ class UsageGraphView @JvmOverloads constructor(
     }
 
     private var dataPoints: List<Float?> = emptyList()
+    private var currentHour: Int = -1  // The current hour of day (0-23), used to cap display
 
     // Animation properties
     private val pathMeasure = PathMeasure()
@@ -61,10 +62,12 @@ class UsageGraphView @JvmOverloads constructor(
 
     /**
      * Sets the hourly data points for the graph and triggers a redraw with animation.
-     * @param points A list of 24 floating point values representing usage in Liters.
+     * @param points A list of values representing usage in Litres for hours 0..currentHourVal.
+     * @param currentHourVal The current hour of day so the graph knows which hour is live.
      */
-    fun setData(points: List<Float?>) {
+    fun setData(points: List<Float?>, currentHourVal: Int = -1) {
         dataPoints = points
+        currentHour = currentHourVal
         startAnimation()
     }
 
@@ -104,7 +107,7 @@ class UsageGraphView @JvmOverloads constructor(
         val paddingLeft = 100f
         val paddingRight = 50f
         val paddingTop = 60f
-        val paddingBottom = 80f
+        val paddingBottom = 95f
         
         val graphW = w - paddingLeft - paddingRight
         val graphH = h - paddingTop - paddingBottom
@@ -128,23 +131,22 @@ class UsageGraphView @JvmOverloads constructor(
         textPaint.textAlign = Paint.Align.LEFT
         canvas.drawText("Litres", 20f, paddingTop - 20f, textPaint)
         textPaint.textAlign = Paint.Align.RIGHT
-        canvas.drawText("Hours", w - 20f, h - 20f, textPaint)
+        canvas.drawText("Hours", w - 20f, h - 8f, textPaint)
 
         if (dataPoints.isEmpty()) return
 
-        val totalHours = 24
-        val stepX = graphW / (totalHours - 1).coerceAtLeast(1)
+        val totalSlots = dataPoints.size.coerceAtLeast(2)  // number of hours to display
+        val stepX = graphW / (totalSlots - 1).coerceAtLeast(1)
 
         val path = Path()
         val fillPath = Path()
-        
+
         val points = mutableListOf<PointF>()
         dataPoints.forEachIndexed { i, val_ ->
-             if (i >= totalHours) return@forEachIndexed
-             val x = paddingLeft + i * stepX
-             val v = val_ ?: 0f
-             val y = h - paddingBottom - (v / maxVal) * graphH
-             points.add(PointF(x, y))
+            val x = paddingLeft + i * stepX
+            val v = val_ ?: 0f
+            val y = h - paddingBottom - (v / maxVal) * graphH
+            points.add(PointF(x, y))
         }
 
         if (points.isEmpty()) return
@@ -185,22 +187,32 @@ class UsageGraphView @JvmOverloads constructor(
         canvas.drawPath(fillPath, fillPaint)
         canvas.drawPath(drawnPath, linePaint)
 
-        // Draw labels and highlight data points
+        // Draw X-axis hour labels and highlight data points
         textPaint.textAlign = Paint.Align.CENTER
+        val labelStep = if (totalSlots <= 6) 1 else if (totalSlots <= 12) 2 else 3
         points.forEachIndexed { i, p ->
             val originalVal = dataPoints.getOrNull(i)
-            
-            if (i % 4 == 0) { 
-                 canvas.drawText(String.format("%02d", i), p.x, h - 30f, textPaint)
+            // Hour label: show every labelStep hours
+            if (i % labelStep == 0) {
+                val hourLabel = if (currentHour >= 0) String.format("%02d", i) else String.format("%02d", i)
+                canvas.drawText(hourLabel, p.x, h - 45f, textPaint)
             }
-            
             if (originalVal != null && originalVal > 0) {
-                // Only show dots if the line has reached them
-                val pointProgress = (i.toFloat() / (points.size - 1))
+                val pointProgress = if (points.size <= 1) 1f else i.toFloat() / (points.size - 1)
                 if (animationProgress >= pointProgress) {
                     canvas.drawCircle(p.x, p.y, 8f, dotPaint)
                     canvas.drawCircle(p.x, p.y, 8f, dotStrokePaint)
                 }
+            }
+            // Highlight the current (last) hour with a larger glowing dot
+            if (i == points.size - 1) {
+                val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = adjustAlpha(ContextCompat.getColor(context, R.color.duo_blue), 0.3f)
+                    style = Paint.Style.FILL
+                }
+                canvas.drawCircle(p.x, p.y, 18f, glowPaint)
+                canvas.drawCircle(p.x, p.y, 10f, dotPaint)
+                canvas.drawCircle(p.x, p.y, 10f, dotStrokePaint)
             }
         }
     }

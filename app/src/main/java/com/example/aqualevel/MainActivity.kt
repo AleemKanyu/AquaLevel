@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navAnalytics: FrameLayout
     private lateinit var navSettings: FrameLayout
     
-    private lateinit var imgHome: ImageView
+    private lateinit var imgHome: WaterDropIconView
     private lateinit var imgAnalytics: ImageView
     private lateinit var imgSettings: ImageView
     private lateinit var navSelector: View
@@ -115,16 +115,18 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        navHome.setOnClickListener { 
+        navHome.setOnClickListener {
             performHapticFeedbackCommon(it)
             applyNavbarClickAnimation(it) {
                 if (viewPager.currentItem == 1) {
-                    // If already on Home, perform refresh
-                    performRefreshVibration()
-                    imgHome.animate().rotationBy(360f).setDuration(500).start()
+                    // Already on Home — play the gyro water splash inside the icon
+                    performWaterDropHaptic()
+                    imgHome.splash {
+                        // Optional: do something when splash finishes draining
+                    }
                     db.collection("sensorCommands").document("esp32_01").update("refresh", true)
                 } else {
-                    viewPager.currentItem = 1 
+                    viewPager.currentItem = 1
                 }
             }
         }
@@ -175,12 +177,8 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // Toggle Home icon vs Refresh icon
-        if (position == 1) {
-            imgHome.setImageResource(R.drawable.ic_sync)
-        } else {
-            imgHome.setImageResource(R.drawable.ic_home)
-        }
+        // Home icon always stays as the home icon — no sync swap
+        imgHome.setImageResource(R.drawable.ic_home)
 
         val activeContainer = containers[position]
         val activeImg = icons[position]
@@ -279,9 +277,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun performRefreshVibration() {
+    /** Water-drop style haptic: strong tap + two softer echoes */
+    private fun performWaterDropHaptic() {
         if (!sharedPref.getBoolean("vibration_enabled", true)) return
-        
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val manager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             manager.defaultVibrator
@@ -289,22 +287,15 @@ class MainActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
-        
-        if (vibrator.hasVibrator()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val timings = longArrayOf(30, 70, 30, 70, 30, 70, 30, 70, 30, 70)
-                val amplitudes = intArrayOf(
-                    VibrationEffect.DEFAULT_AMPLITUDE, 0,
-                    VibrationEffect.DEFAULT_AMPLITUDE, 0,
-                    VibrationEffect.DEFAULT_AMPLITUDE, 0,
-                    VibrationEffect.DEFAULT_AMPLITUDE, 0,
-                    VibrationEffect.DEFAULT_AMPLITUDE, 0
-                )
-                vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(longArrayOf(0, 30, 70, 30, 70, 30, 70, 30, 70, 30, 70), -1)
-            }
+        if (!vibrator.hasVibrator()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Pattern: strong hit, pause, medium echo, pause, light echo
+            val timings   = longArrayOf(0, 60, 80, 30, 100, 15)
+            val amplitudes = intArrayOf(0, 255, 0, 160, 0, 80)
+            vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(longArrayOf(0, 60, 80, 30, 100, 15), -1)
         }
     }
 

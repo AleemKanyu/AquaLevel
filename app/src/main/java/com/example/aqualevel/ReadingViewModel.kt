@@ -24,6 +24,12 @@ class ReadingViewModel(application: Application) : AndroidViewModel(application)
     val hourlyReadings: LiveData<List<HourlyReadingEntity>>
 
     /** 
+     * LiveData containing all readings from Room.
+     * Used for getting the real-time live distance.
+     */
+    val allReadings: LiveData<List<Readings>>
+
+    /** 
      * LiveData containing daily usage for the last 7 days from Room.
      * Used for the Weekly Graph.
      */
@@ -39,6 +45,7 @@ class ReadingViewModel(application: Application) : AndroidViewModel(application)
         // Single source of truth: Room flows converted to LiveData
         hourlyReadings = repository.hourlyReadings.asLiveData()
         weeklyUsage = repository.dailyUsages.asLiveData()
+        allReadings = repository.allReadings
 
         // Start real-time sync from Firestore to Room
         repository.startSyncing()

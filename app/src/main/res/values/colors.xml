@@ -52,6 +52,7 @@
     <color name="blue_dark">@color/brand_primary</color>
     <color name="water_blue">@color/brand_primary</color>
     <color name="bar_blue">@color/brand_primary_shadow</color>
+    <color name="bar_today">#1058A3</color>
 
     <!-- Main Background -->
     <color name="main_background">@color/white</color>
