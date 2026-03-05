@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navAnalytics: FrameLayout
     private lateinit var navSettings: FrameLayout
     
-    private lateinit var imgHome: WaterDropIconView
+    private lateinit var imgHome: ImageView
     private lateinit var imgAnalytics: ImageView
     private lateinit var imgSettings: ImageView
     private lateinit var navSelector: View
@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var sharedPref: SharedPreferences
     private lateinit var viewModel: ReadingViewModel
+    private lateinit var updateManager: UpdateManager
     
     private val db = FirebaseFirestore.getInstance()
 
@@ -64,7 +65,7 @@ class MainActivity : AppCompatActivity() {
         themeToggle.setOnClickListener {
             performHapticFeedbackCommon(it)
             // Animate only the icon but don't wait for it
-            applyClickAnimation(themeIcon) { } 
+            applyPremiumPopAnimation(themeIcon) { } 
             
             // Execute logic immediately
             val isDark = sharedPref.getBoolean("is_dark_mode", false)
@@ -81,6 +82,20 @@ class MainActivity : AppCompatActivity() {
 
         setupNavigation(savedInstanceState == null)
         scheduleBackgroundWorker()
+        
+        updateManager = UpdateManager(this)
+        checkForUpdates()
+    }
+
+    private fun checkForUpdates() {
+        updateManager.checkForUpdates(0) { tag, url ->
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("New Update Available")
+                .setMessage("A new version ($tag) is available on GitHub. Would you like to download it?")
+                .setPositiveButton("Download") { _, _ -> updateManager.downloadAndInstall(url) }
+                .setNegativeButton("Later", null)
+                .show()
+        }
     }
 
     private fun setupNavigation(isFirstLaunch: Boolean) {
@@ -116,16 +131,16 @@ class MainActivity : AppCompatActivity() {
         })
 
         navHome.setOnClickListener {
-            performHapticFeedbackCommon(it)
-            applyNavbarClickAnimation(it) {
-                if (viewPager.currentItem == 1) {
-                    // Already on Home — play the gyro water splash inside the icon
-                    performWaterDropHaptic()
-                    imgHome.splash {
-                        // Optional: do something when splash finishes draining
-                    }
-                    db.collection("sensorCommands").document("esp32_01").update("refresh", true)
-                } else {
+            if (viewPager.currentItem == 1) {
+                // Already on Home — play the explosion burst
+                performExplosionHaptic()
+                applyExplosionAnimation(imgHome) {
+                    // Refresh data
+                }
+                db.collection("sensorCommands").document("esp32_01").update("refresh", true)
+            } else {
+                performPremiumHaptic()
+                applyPremiumPopAnimation(it) {
                     viewPager.currentItem = 1
                 }
             }
@@ -306,10 +321,172 @@ class MainActivity : AppCompatActivity() {
         action()
     }
 
-    private fun applyClickAnimation(view: View, onAnimationEnd: () -> Unit) {
-        view.animate().scaleX(0.85f).scaleY(0.85f).setDuration(100).withEndAction {
-            view.animate().scaleX(1f).scaleY(1f).setDuration(100).withEndAction { onAnimationEnd() }.start()
-        }.start()
+    /** Premium "Liquid Pop" animation */
+    private fun applyPremiumPopAnimation(view: View, onEnd: (() -> Unit)? = null) {
+        val originalScaleX = view.scaleX
+        val originalScaleY = view.scaleY
+
+        // Step 1: Squash & Anticipate (Quick dip)
+        view.animate()
+            .scaleX(originalScaleX * 1.15f)
+            .scaleY(originalScaleY * 0.75f)
+            .translationY(dpToPx(this, 4).toFloat())
+            .setDuration(80)
+            .setInterpolator(android.view.animation.AccelerateInterpolator())
+            .withEndAction {
+                // Step 2: Elastic Pop Up
+                view.animate()
+                    .scaleX(originalScaleX * 0.85f)
+                    .scaleY(originalScaleY * 1.35f)
+                    .translationY(-dpToPx(this, 12).toFloat())
+                    .setDuration(120)
+                    .setInterpolator(android.view.animation.DecelerateInterpolator())
+                    .withEndAction {
+                        // Step 3: Soft Settle
+                        view.animate()
+                            .scaleX(originalScaleX)
+                            .scaleY(originalScaleY)
+                            .translationY(0f)
+                            .setDuration(500)
+                            .setInterpolator(android.view.animation.AnticipateOvershootInterpolator(2.0f))
+                            .withEndAction { onEnd?.invoke() }
+                            .start()
+                    }
+                    .start()
+            }
+            .start()
+    }
+
+    /** High-intensity "Exploding Burst" animation with pre-vibration */
+    private fun applyExplosionAnimation(view: View, onEnd: (() -> Unit)? = null) {
+        val root = findViewById<android.view.ViewGroup>(R.id.main)
+        val location = IntArray(2)
+        view.getLocationInWindow(location)
+        val centerX = location[0] + view.width / 2f
+        val centerY = location[1] + view.height / 2f
+
+        // Phase 1: Vibrate/Shake Buildup (800ms)
+        val shakeDuration = 800L
+        val originalX = view.translationX
+        
+        // Setup a repeating shake using a ValueAnimator
+        val shakeAnimator = android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = shakeDuration
+            addUpdateListener {
+                val fraction = it.animatedFraction
+                // Increase intensity as fraction goes 0 -> 1
+                val intensity = fraction * dpToPx(this@MainActivity, 6)
+                // Fast sine wave for shake
+                view.translationX = originalX + (Math.sin(fraction * Math.PI * 40) * intensity).toFloat()
+            }
+        }
+
+        shakeAnimator.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                view.translationX = originalX
+                
+                // Phase 2: Shatter and Explode
+                // 1. Hide the original view (shatter effect)
+                view.animate().scaleX(0f).scaleY(0f).alpha(0f).setDuration(100).withEndAction {
+                    // 2. Return with a pop
+                    view.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(400)
+                        .setStartDelay(300)
+                        .setInterpolator(android.view.animation.OvershootInterpolator(2.0f))
+                        .withEndAction { onEnd?.invoke() }
+                        .start()
+                }.start()
+
+                // 3. Create particles
+                val particleCount = 16
+                val colors = listOf(R.color.duo_blue, R.color.duo_blue_shadow, R.color.brand_warning, R.color.white)
+                
+                for (i in 0 until particleCount) {
+                    val particle = View(this@MainActivity).apply {
+                        val size = dpToPx(this@MainActivity, (4..10).random())
+                        layoutParams = FrameLayout.LayoutParams(size, size)
+                        val shape = android.graphics.drawable.GradientDrawable().apply {
+                            shape = android.graphics.drawable.GradientDrawable.OVAL
+                            setColor(androidx.core.content.ContextCompat.getColor(this@MainActivity, colors.random()))
+                        }
+                        background = shape
+                        x = centerX - size / 2f
+                        y = centerY - size / 2f
+                    }
+                    root.addView(particle)
+
+                    val angle = (Math.random() * 2 * Math.PI)
+                    val distance = dpToPx(this@MainActivity, (80..160).random()).toFloat()
+                    val destX = centerX + distance * Math.cos(angle).toFloat()
+                    val destY = centerY + distance * Math.sin(angle).toFloat()
+
+                    particle.animate()
+                        .translationX(destX)
+                        .translationY(destY)
+                        .scaleX(0f)
+                        .scaleY(0f)
+                        .alpha(0f)
+                        .setDuration((500..900).random().toLong())
+                        .setInterpolator(android.view.animation.DecelerateInterpolator())
+                        .withEndAction { root.removeView(particle) }
+                        .start()
+                }
+            }
+        })
+        
+        shakeAnimator.start()
+    }
+
+    private fun performExplosionHaptic() {
+        if (!sharedPref.getBoolean("vibration_enabled", true)) return
+        val vibrator = getVibrator() ?: return
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // 800ms buildup rumble followed by heavy hit and shrapnel pulses
+            val timings = longArrayOf(0, 
+                40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 
+                40, 40, 40, 40, 40, 40, 40, 40, 40, 40, // 20 entries (800ms total)
+                80, 50, 15, 40, 10, 30, 8 // 7 entries
+            )
+            val amplitudes = intArrayOf(0, 
+                20, 0, 40, 0, 60, 0, 80, 0, 100, 0,
+                120, 0, 140, 0, 160, 0, 180, 0, 200, 0, // 20 entries
+                255, 0, 180, 0, 120, 0, 80 // 7 entries
+            )
+            vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(1200)
+        }
+    }
+
+    private fun performPremiumHaptic() {
+        if (!sharedPref.getBoolean("vibration_enabled", true)) return
+        val vibrator = getVibrator() ?: return
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            vibrator.vibrate(VibrationEffect.startComposition()
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1.0f)
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, 0.4f, 60)
+                .compose())
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Crisp hit + soft echo
+            val timings = longArrayOf(0, 15, 60, 10)
+            val amplitudes = intArrayOf(0, 255, 0, 100)
+            vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(20)
+        }
+    }
+
+    private fun getVibrator(): Vibrator? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val manager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            manager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        }
     }
 
     private fun dpToPx(context: Context, dp: Int): Int = (dp * context.resources.displayMetrics.density).toInt()
