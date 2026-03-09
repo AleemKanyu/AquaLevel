@@ -45,9 +45,11 @@ class UpdateManager(private val context: Context) {
                     // Strip "v" if present so it match our versionName e.g. "1.8.0"
                     val cleanLatestTag = latestTagName.removePrefix("v").removePrefix("V")
                     
-                    val currentTag = context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                    val currentTag = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
                     
-                    if (cleanLatestTag != currentTag) {
+                    Log.d("UpdateManager", "Current version: $currentTag, Latest version: $cleanLatestTag")
+
+                    if (isNewerVersion(currentTag, cleanLatestTag)) {
                         // Check if the user already dismissed this specific version update
                         val sharedPref = context.getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
                         val skippedVersion = sharedPref.getString("skipped_update_version", null)
@@ -67,6 +69,21 @@ class UpdateManager(private val context: Context) {
             } catch (e: Exception) {
                 Log.e("UpdateManager", "Error checking for updates", e)
             }
+        }
+    }
+
+    private fun isNewerVersion(current: String, latest: String): Boolean {
+        return try {
+            val currentParts = current.split(".").map { it.toInt() }
+            val latestParts = latest.split(".").map { it.toInt() }
+            
+            for (i in 0 until minOf(currentParts.size, latestParts.size)) {
+                if (latestParts[i] > currentParts[i]) return true
+                if (latestParts[i] < currentParts[i]) return false
+            }
+            latestParts.size > currentParts.size
+        } catch (e: Exception) {
+            latest != current
         }
     }
 
@@ -96,7 +113,7 @@ class UpdateManager(private val context: Context) {
             context,
             receiver,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            ContextCompat.RECEIVER_NOT_EXPORTED
+            ContextCompat.RECEIVER_EXPORTED
         )
         
         Toast.makeText(context, "Update download started...", Toast.LENGTH_SHORT).show()
