@@ -162,17 +162,18 @@ class HomeFragment : Fragment() {
             if (readings.isEmpty()) return@observe
             val sortedReadings = readings.sortedBy { it.hour.toIntOrNull() ?: 0 }
             
+            val rawDistances = sortedReadings.map { it.distance }.toDoubleArray()
+            val distances = SpikeFilter.smoothDistances(rawDistances)
+            
             var baseDist = 0.0
-            for (i in 1 until sortedReadings.size) {
-                val prev = sortedReadings[i - 1]
-                val curr = sortedReadings[i]
-                val distDiff = curr.distance - prev.distance
-                if (distDiff > 0) {
+            for (i in 1 until distances.size) {
+                val distDiff = distances[i] - distances[i - 1]
+                if (distDiff > 1.0) { // filter out micro-jitters
                     baseDist += distDiff
                 }
             }
             todayBaseUsageDist = baseDist
-            lastHourlyDistance = sortedReadings.last().distance
+            lastHourlyDistance = distances.last()
             refreshUsageDisplay()
         }
 

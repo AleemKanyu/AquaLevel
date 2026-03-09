@@ -6,11 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,10 +22,13 @@ import java.net.URL
 
 class UpdateManager(private val context: Context) {
 
-    private val GITHUB_API_URL = "https://api.github.com/repos/AleemKanyu/AquaLevel/releases/latest"
+    private companion object {
+        const val GITHUB_API_URL = "https://api.github.com/repos/AleemKanyu/AquaLevel/releases/latest"
+    }
+
     private var downloadId: Long = -1L
 
-    fun checkForUpdates(currentVersion: Int, onUpdateAvailable: (String, String) -> Unit) {
+    fun checkForUpdates(onUpdateAvailable: (String, String) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val url = URL(GITHUB_API_URL)
@@ -35,22 +39,27 @@ class UpdateManager(private val context: Context) {
                 if (connection.responseCode == 200) {
                     val content = connection.inputStream.bufferedReader().use { it.readText() }
                     val json = JSONObject(content)
+                    
+                    // The tag from GitHub, e.g. "v1.8.0"
                     val latestTagName = json.getString("tag_name")
-                    // Assuming tag is like "v1.2" and we check against versionCode or similar
-                    // For simplicity, let's assume we use a version string comparison or explicit property
+                    // Strip "v" if present so it match our versionName e.g. "1.8.0"
+                    val cleanLatestTag = latestTagName.removePrefix("v").removePrefix("V")
                     
-                    // In a real app, you'd parse version from tag or a metadata file
-                    // Here we'll just check if tag is different for demonstration
-                    val currentTag = "v${context.packageManager.getPackageInfo(context.packageName, 0).versionName}"
+                    val currentTag = context.packageManager.getPackageInfo(context.packageName, 0).versionName
                     
-                    if (latestTagName != currentTag) {
-                        val assets = json.getJSONArray("assets")
-                        if (assets.length() > 0) {
-                            val downloadUrl = assets.getJSONObject(0).getString("browser_download_url")
-                            val releaseBody = json.optString("body", "No changelog provided.")
-                            
-                            withContext(Dispatchers.Main) {
-                                onUpdateAvailable(latestTagName, downloadUrl)
+                    if (cleanLatestTag != currentTag) {
+                        // Check if the user already dismissed this specific version update
+                        val sharedPref = context.getSharedPreferences("AquaLevelPrefs", Context.MODE_PRIVATE)
+                        val skippedVersion = sharedPref.getString("skipped_update_version", null)
+                        
+                        if (cleanLatestTag != skippedVersion) {
+                            val assets = json.getJSONArray("assets")
+                            if (assets.length() > 0) {
+                                val downloadUrl = assets.getJSONObject(0).getString("browser_download_url")
+                                
+                                withContext(Dispatchers.Main) {
+                                    onUpdateAvailable(cleanLatestTag, downloadUrl)
+                                }
                             }
                         }
                     }
@@ -62,7 +71,7 @@ class UpdateManager(private val context: Context) {
     }
 
     fun downloadAndInstall(downloadUrl: String) {
-        val request = DownloadManager.Request(Uri.parse(downloadUrl))
+        val request = DownloadManager.Request(downloadUrl.toUri())
             .setTitle("AquaLevel Update")
             .setDescription("Downloading latest version...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
@@ -73,7 +82,7 @@ class UpdateManager(private val context: Context) {
         val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         downloadId = dm.enqueue(request)
 
-        context.registerReceiver(object : BroadcastReceiver() {
+        val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
@@ -81,7 +90,14 @@ class UpdateManager(private val context: Context) {
                     context?.unregisterReceiver(this)
                 }
             }
-        }, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+        }
+
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
         
         Toast.makeText(context, "Update download started...", Toast.LENGTH_SHORT).show()
     }

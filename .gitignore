@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Secrets
+/app/google-services.json
+Esp32Code/secrets.h

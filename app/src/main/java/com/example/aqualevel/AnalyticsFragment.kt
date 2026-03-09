@@ -130,14 +130,17 @@ class AnalyticsFragment : Fragment() {
         val sortedReadings = readings.sortedBy { it.hour.toIntOrNull() ?: 0 }
         var todayTotalUsageDist = 0.0
         
+        val rawDistances = sortedReadings.map { it.distance }.toDoubleArray()
+        val distances = SpikeFilter.smoothDistances(rawDistances)
+        
         for (i in 1 until sortedReadings.size) {
-            val prev = sortedReadings[i - 1]
-            val curr = sortedReadings[i]
+            val prevDist = distances[i - 1]
+            val currDist = distances[i]
             
-            val currHour = curr.hour.toIntOrNull() ?: continue
+            val currHour = sortedReadings[i].hour.toIntOrNull() ?: continue
             
-            val diff = curr.distance - prev.distance
-            if (diff > 0) {
+            val diff = currDist - prevDist
+            if (diff > 1.0) { // filter out micro-jitters
                 val usedVol = (diff / totalDistRange) * tankVolume
                 hourlyUsage[currHour] = usedVol.toFloat()
                 todayTotalUsageDist += diff

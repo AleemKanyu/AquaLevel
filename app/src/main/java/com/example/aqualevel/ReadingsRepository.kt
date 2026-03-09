@@ -97,9 +97,12 @@ class ReadingsRepository(private val readingsDao: ReadingsDao) {
         val sorted = hourlyList.sortedBy { it.hour.toIntOrNull() ?: 0 }
         var totalUsageDist = 0.0
 
-        for (i in 1 until sorted.size) {
-            val diff = sorted[i].distance - sorted[i - 1].distance
-            if (diff > 0) {
+        val rawDistances = sorted.map { it.distance }.toDoubleArray()
+        val distances = SpikeFilter.smoothDistances(rawDistances)
+
+        for (i in 1 until distances.size) {
+            val diff = distances[i] - distances[i - 1]
+            if (diff > 1.0) { // match behavior in Fragments ignoring micro-jitters
                 totalUsageDist += diff
             }
         }

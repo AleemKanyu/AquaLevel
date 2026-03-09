@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.aqualevel_"
         minSdk = 24 // Updated from 26 to 24 for Android 7 support
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 8
+        versionName = "1.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

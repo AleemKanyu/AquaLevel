@@ -93,7 +93,9 @@ class MainActivity : AppCompatActivity() {
                 .setTitle("New Update Available")
                 .setMessage("A new version ($tag) is available on GitHub. Would you like to download it?")
                 .setPositiveButton("Download") { _, _ -> updateManager.downloadAndInstall(url) }
-                .setNegativeButton("Later", null)
+                .setNegativeButton("Later") { _, _ ->
+                    sharedPref.edit().putString("skipped_update_version", tag).apply()
+                }
                 .show()
         }
     }
@@ -132,9 +134,8 @@ class MainActivity : AppCompatActivity() {
 
         navHome.setOnClickListener {
             if (viewPager.currentItem == 1) {
-                // Already on Home — play the explosion burst
-                performExplosionHaptic()
-                applyExplosionAnimation(imgHome) {
+                // Already on Home — play the refresh animation
+                applyRefreshAnimation(imgHome) {
                     // Refresh data
                 }
                 db.collection("sensorCommands").document("esp32_01").update("refresh", true)
@@ -192,8 +193,12 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // Home icon always stays as the home icon — no sync swap
-        imgHome.setImageResource(R.drawable.ic_home)
+        // Home icon changes to refresh when on the home screen
+        if (position == 1) {
+            imgHome.setImageResource(R.drawable.ic_sync)
+        } else {
+            imgHome.setImageResource(R.drawable.ic_home)
+        }
 
         val activeContainer = containers[position]
         val activeImg = icons[position]
@@ -357,105 +362,47 @@ class MainActivity : AppCompatActivity() {
             .start()
     }
 
-    /** High-intensity "Exploding Burst" animation with pre-vibration */
-    private fun applyExplosionAnimation(view: View, onEnd: (() -> Unit)? = null) {
-        val root = findViewById<android.view.ViewGroup>(R.id.main)
-        val location = IntArray(2)
-        view.getLocationInWindow(location)
-        val centerX = location[0] + view.width / 2f
-        val centerY = location[1] + view.height / 2f
-
-        // Phase 1: Vibrate/Shake Buildup (800ms)
-        val shakeDuration = 800L
-        val originalX = view.translationX
+    /** Rotation "Refresh" animation with continuous vibration */
+    private fun applyRefreshAnimation(view: View, onEnd: (() -> Unit)? = null) {
+        view.animate().cancel()
         
-        // Setup a repeating shake using a ValueAnimator
-        val shakeAnimator = android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = shakeDuration
-            addUpdateListener {
-                val fraction = it.animatedFraction
-                // Increase intensity as fraction goes 0 -> 1
-                val intensity = fraction * dpToPx(this@MainActivity, 6)
-                // Fast sine wave for shake
-                view.translationX = originalX + (Math.sin(fraction * Math.PI * 40) * intensity).toFloat()
-            }
-        }
-
-        shakeAnimator.addListener(object : android.animation.AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: android.animation.Animator) {
-                view.translationX = originalX
-                
-                // Phase 2: Shatter and Explode
-                // 1. Hide the original view (shatter effect)
-                view.animate().scaleX(0f).scaleY(0f).alpha(0f).setDuration(100).withEndAction {
-                    // 2. Return with a pop
-                    view.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(400)
-                        .setStartDelay(300)
-                        .setInterpolator(android.view.animation.OvershootInterpolator(2.0f))
-                        .withEndAction { onEnd?.invoke() }
-                        .start()
-                }.start()
-
-                // 3. Create particles
-                val particleCount = 16
-                val colors = listOf(R.color.duo_blue, R.color.duo_blue_shadow, R.color.brand_warning, R.color.white)
-                
-                for (i in 0 until particleCount) {
-                    val particle = View(this@MainActivity).apply {
-                        val size = dpToPx(this@MainActivity, (4..10).random())
-                        layoutParams = FrameLayout.LayoutParams(size, size)
-                        val shape = android.graphics.drawable.GradientDrawable().apply {
-                            shape = android.graphics.drawable.GradientDrawable.OVAL
-                            setColor(androidx.core.content.ContextCompat.getColor(this@MainActivity, colors.random()))
-                        }
-                        background = shape
-                        x = centerX - size / 2f
-                        y = centerY - size / 2f
+        // Phase 1: Spin up and scale down
+        view.animate()
+            .rotationBy(360f * 2) // Rotate 720 degrees
+            .scaleX(0.7f)
+            .scaleY(0.7f)
+            .setDuration(400)
+            .setInterpolator(android.view.animation.AccelerateInterpolator())
+            .withEndAction {
+                // Phase 2: Pop back to original size
+                view.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(300)
+                    .setInterpolator(android.view.animation.OvershootInterpolator(2.0f))
+                    .withEndAction {
+                        view.rotation = 0f
+                        onEnd?.invoke()
                     }
-                    root.addView(particle)
-
-                    val angle = (Math.random() * 2 * Math.PI)
-                    val distance = dpToPx(this@MainActivity, (80..160).random()).toFloat()
-                    val destX = centerX + distance * Math.cos(angle).toFloat()
-                    val destY = centerY + distance * Math.sin(angle).toFloat()
-
-                    particle.animate()
-                        .translationX(destX)
-                        .translationY(destY)
-                        .scaleX(0f)
-                        .scaleY(0f)
-                        .alpha(0f)
-                        .setDuration((500..900).random().toLong())
-                        .setInterpolator(android.view.animation.DecelerateInterpolator())
-                        .withEndAction { root.removeView(particle) }
-                        .start()
-                }
+                    .start()
             }
-        })
-        
-        shakeAnimator.start()
+            .start()
+            
+        performRefreshHaptic()
     }
 
-    private fun performExplosionHaptic() {
+    private fun performRefreshHaptic() {
         if (!sharedPref.getBoolean("vibration_enabled", true)) return
         val vibrator = getVibrator() ?: return
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // 800ms buildup rumble followed by heavy hit and shrapnel pulses
-            val timings = longArrayOf(0, 
-                40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 
-                40, 40, 40, 40, 40, 40, 40, 40, 40, 40, // 20 entries (800ms total)
-                80, 50, 15, 40, 10, 30, 8 // 7 entries
-            )
-            val amplitudes = intArrayOf(0, 
-                20, 0, 40, 0, 60, 0, 80, 0, 100, 0,
-                120, 0, 140, 0, 160, 0, 180, 0, 200, 0, // 20 entries
-                255, 0, 180, 0, 120, 0, 80 // 7 entries
-            )
+            // A ramping rumble followed by a crisp hit when it pops back
+            val timings = longArrayOf(0, 50, 30, 50, 30, 50, 30, 50, 30, 150, 80)
+            val amplitudes = intArrayOf(0, 60, 0, 80, 0, 120, 0, 160, 0, 0, 255)
             vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
         } else {
             @Suppress("DEPRECATION")
-            vibrator.vibrate(1200)
+            vibrator.vibrate(longArrayOf(0, 50, 30, 50, 30, 50, 30, 50, 30, 150, 80), -1)
         }
     }
 
