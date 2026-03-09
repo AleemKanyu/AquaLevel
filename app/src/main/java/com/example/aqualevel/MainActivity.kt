@@ -88,7 +88,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkForUpdates() {
-        updateManager.checkForUpdates(0) { tag, url ->
+        updateManager.checkForUpdates { tag, url ->
             androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("New Update Available")
                 .setMessage("A new version ($tag) is available on GitHub. Would you like to download it?")
@@ -159,8 +159,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    // ...
 
     private fun updateNavbarUI(position: Int) {
         val icons = listOf(imgAnalytics, imgHome, imgSettings)
