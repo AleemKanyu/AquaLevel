@@ -52,7 +52,7 @@
     <!-- Firebase App (the core Firebase SDK) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, query, orderBy, limit, getDocs, where } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -99,7 +99,7 @@
                 unsubscribeLive();
             }
 
-            const sensorDataRef = doc(db, "sensorData", deviceId);
+            const sensorDataRef = doc(db, "devices", deviceId);
 
             // Listen for real-time updates on the Tanker level
             unsubscribeLive = onSnapshot(sensorDataRef, (docSnap) => {
@@ -149,8 +149,15 @@
 
         // Fetch Daily History for the Chart
         async function fetchDailyHistory(deviceId) {
-            const dailyColRef = collection(db, "sensorData", deviceId, "daily");
-            const q = query(dailyColRef, orderBy("date", "desc"), limit(7));
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const y = sevenDaysAgo.getFullYear();
+            const m = String(sevenDaysAgo.getMonth() + 1).padStart(2, '0');
+            const d = String(sevenDaysAgo.getDate()).padStart(2, '0');
+            const sevenDaysAgoStr = `${y}-${m}-${d}`;
+
+            const dailyColRef = collection(db, "devices", deviceId, "daily");
+            const q = query(dailyColRef, where("date", ">=", sevenDaysAgoStr));
             const querySnapshot = await getDocs(q);
 
             weeklyDaysData = [];
@@ -158,7 +165,7 @@
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
                 const safeDate = data.date || docSnap.id;
-                const safeTotalDist = data.totalDistance || 0;
+                const safeTotalDist = data.totalDrop || data.totalDistance || 0;
                 weeklyDaysData.push({ date: safeDate, totalDistance: safeTotalDist, readingCount: data.readingCount || 0 });
             });
 
@@ -270,21 +277,30 @@
 
         // Fetch Hourly Current History for the Analytics Graph
         async function fetchHourlyHistory(deviceId) {
-            const hourlyColRef = collection(db, "sensorData", deviceId, "hourly_current");
-            const q = query(hourlyColRef, orderBy("timestamp", "asc"));
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            const hourlyColRef = collection(db, "devices", deviceId, "hourly");
+            const q = query(hourlyColRef, where("date", "==", todayStr));
             const querySnapshot = await getDocs(q);
 
             const readings = [];
             querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const hourVal = data.hour !== undefined ? data.hour : docSnap.id.split("_").pop();
                 readings.push({
-                    hour: docSnap.id,
-                    ...docSnap.data()
+                    hour: hourVal,
+                    ...data
                 });
             });
 
             if (readings.length === 0) return;
 
-            readings.sort((a, b) => parseInt(a.hour) - parseInt(b.hour));
+            // Sort in memory by timestamp
+            readings.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
             const totalDistRange = emptyDistance - fullDistance;
             if (totalDistRange <= 0) return;
