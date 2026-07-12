@@ -47,6 +47,7 @@
     </script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <!-- Firebase App (the core Firebase SDK) -->
     <script type="module">
@@ -70,9 +71,6 @@
         const daysLeftText = document.getElementById("days-left-text");
         const waterFillUI = document.getElementById("water-fill-ui");
 
-        // Reference to the main tanker document
-        const sensorDataRef = doc(db, "sensorData", "esp32_01");
-
         // Calibration Constants (Default)
         const emptyDistance = 130.0;
         const fullDistance = 20.0;
@@ -83,45 +81,75 @@
         let lastHourlyDistance = -1;
         let weeklyDaysData = [];
 
-        // Listen for real-time updates on the Tanker level
-        onSnapshot(sensorDataRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                const distance = data.distance || 0;
-                currentLiveDistance = distance;
+        let currentDeviceId = localStorage.getItem("deviceId") || "esp32_01";
+        let unsubscribeLive = null;
 
-                // Calculate true percentage matching the Android app logic
-                // percent = ((emptyDistance - min(max(distance, fullDistance), emptyDistance)) / (emptyDistance - fullDistance)) * 100.0
-                let clampedDistance = Math.min(Math.max(distance, fullDistance), emptyDistance);
-                let percentage = ((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0;
+        // Initialize dashboard for device
+        window.initializeDashboard = function(deviceId) {
+            currentDeviceId = deviceId;
+            
+            // Update active device UI text
+            const activeDeviceTexts = document.querySelectorAll(".active-device-name");
+            activeDeviceTexts.forEach(el => {
+                el.innerText = deviceId;
+            });
 
-                percentage = Math.round(percentage);
-                if (percentage > 100) percentage = 100;
-                if (percentage < 0) percentage = 0;
-
-                // Update Home UI Text
-                capacityText.innerText = `${percentage}%`;
-
-                // Update Water Fill CSS
-                waterFillUI.style.height = `${percentage}%`;
-
-                // Update Analytics UI Text
-                const analyticsPercentage = document.getElementById("analytics-percentage");
-                if (analyticsPercentage) {
-                    analyticsPercentage.innerText = `${percentage}`;
-                }
-
-                if (typeof updateLiveUsage === "function") {
-                    updateLiveUsage();
-                }
-            } else {
-                console.log("No such document!");
+            // Unsubscribe from previous listener if active
+            if (unsubscribeLive) {
+                unsubscribeLive();
             }
-        });
+
+            const sensorDataRef = doc(db, "sensorData", deviceId);
+
+            // Listen for real-time updates on the Tanker level
+            unsubscribeLive = onSnapshot(sensorDataRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const distance = data.distance || 0;
+                    currentLiveDistance = distance;
+
+                    // Calculate true percentage matching the Android app logic
+                    let clampedDistance = Math.min(Math.max(distance, fullDistance), emptyDistance);
+                    let percentage = ((emptyDistance - clampedDistance) / (emptyDistance - fullDistance)) * 100.0;
+
+                    percentage = Math.round(percentage);
+                    if (percentage > 100) percentage = 100;
+                    if (percentage < 0) percentage = 0;
+
+                    // Update Home UI Text
+                    capacityText.innerText = `${percentage}%`;
+
+                    // Update Water Fill CSS
+                    waterFillUI.style.height = `${percentage}%`;
+
+                    // Update Analytics UI Text
+                    const analyticsPercentage = document.getElementById("analytics-percentage");
+                    if (analyticsPercentage) {
+                        analyticsPercentage.innerText = `${percentage}`;
+                    }
+
+                    if (typeof updateLiveUsage === "function") {
+                        updateLiveUsage();
+                    }
+                } else {
+                    console.log("No such document!");
+                    capacityText.innerText = "N/A";
+                    waterFillUI.style.height = "0%";
+                    const analyticsPercentage = document.getElementById("analytics-percentage");
+                    if (analyticsPercentage) {
+                        analyticsPercentage.innerText = "N/A";
+                    }
+                }
+            });
+
+            // Fetch daily and hourly history
+            fetchDailyHistory(deviceId);
+            fetchHourlyHistory(deviceId);
+        };
 
         // Fetch Daily History for the Chart
-        async function fetchDailyHistory() {
-            const dailyColRef = collection(db, "sensorData", "esp32_01", "daily");
+        async function fetchDailyHistory(deviceId) {
+            const dailyColRef = collection(db, "sensorData", deviceId, "daily");
             const q = query(dailyColRef, orderBy("date", "desc"), limit(7));
             const querySnapshot = await getDocs(q);
 
@@ -141,9 +169,6 @@
         function updateWeeklyGraphDisplay(totalTodayDist) {
             let totalUsageSum = 0;
             const totalDistRange = emptyDistance - fullDistance;
-
-            // Calculate total usage sum over tracked days
-            // For today, use totalTodayDist instead of stored daily total if it's greater
 
             const last7Days = [];
             for (let i = 6; i >= 0; i--) {
@@ -198,7 +223,6 @@
                 const targetDate = last7Days[i].date;
                 labelUI.innerText = last7Days[i].label;
 
-                // Find if there's data for this strict date
                 const dayData = weeklyDaysData.find(d => d.date === targetDate);
 
                 let usedVolume = 0;
@@ -214,22 +238,18 @@
                     barUI.style.height = `${visualPercent}%`;
                     tooltipUI.innerText = `${Math.round(usedVolume)} L`;
                 } else {
-                    // No data for this specific calendar day
                     barUI.style.height = "0%";
                     tooltipUI.innerText = "0 L";
                 }
 
-                // highlight the current day text if it's the last one
                 const barContainerUI = barUI.parentElement;
                 const columnWrapperUI = barContainerUI.parentElement;
 
-                // Ensure column wrapper has h-full so it doesn't collapse
                 if (!columnWrapperUI.classList.contains("h-full")) {
                     columnWrapperUI.classList.add("h-full");
                 }
 
                 if (i === 6) {
-                    // Today's bar: use primary teal color
                     labelUI.className = "text-[10px] lg:text-xs font-bold";
                     labelUI.style.color = "#5FA7A7";
                     barUI.style.backgroundColor = "#5FA7A7";
@@ -238,7 +258,6 @@
                     barContainerUI.className = "w-full rounded-lg relative h-full overflow-hidden";
                     barContainerUI.style.backgroundColor = "rgba(95,167,167,0.12)";
                 } else {
-                    // Past days: use secondary blue-grey at 60% opacity
                     labelUI.className = "text-[10px] lg:text-xs font-medium";
                     labelUI.style.color = "#64748B";
                     barUI.style.backgroundColor = "rgba(161,201,241,0.7)";
@@ -250,9 +269,9 @@
         }
 
         // Fetch Hourly Current History for the Analytics Graph
-        async function fetchHourlyHistory() {
-            const hourlyColRef = collection(db, "sensorData", "esp32_01", "hourly_current");
-            const q = query(hourlyColRef, orderBy("timestamp", "asc")); // order by timestamp or hour
+        async function fetchHourlyHistory(deviceId) {
+            const hourlyColRef = collection(db, "sensorData", deviceId, "hourly_current");
+            const q = query(hourlyColRef, orderBy("timestamp", "asc"));
             const querySnapshot = await getDocs(q);
 
             const readings = [];
@@ -265,13 +284,11 @@
 
             if (readings.length === 0) return;
 
-            // Ensure the readings are sorted numerically by hour
             readings.sort((a, b) => parseInt(a.hour) - parseInt(b.hour));
 
             const totalDistRange = emptyDistance - fullDistance;
             if (totalDistRange <= 0) return;
 
-            // Arrays for the 24 hour graph
             const hourlyUsage = new Array(24).fill(0);
             let todayTotalUsageDist = 0;
 
@@ -283,7 +300,7 @@
                 if (isNaN(currHour)) continue;
 
                 const diff = curr.distance - prev.distance;
-                if (diff > 0) { // Water level dropped
+                if (diff > 0) {
                     const usedVol = (diff / totalDistRange) * tankVolume;
                     hourlyUsage[currHour] = usedVol;
                     todayTotalUsageDist += diff;
@@ -303,12 +320,9 @@
             const totalDistRange = emptyDistance - fullDistance;
             if (totalDistRange <= 0) return;
 
-            // Today's usage = direct sum of all recorded hourly drops.
-            // This matches "sum of all usage hours" as requested.
             const totalTodayDist = todayBaseUsageDist;
             const todayUsageVol = (totalTodayDist / totalDistRange) * tankVolume;
 
-            // Populate Analytics Cards
             const analyticsDailyUsage = document.getElementById("analytics-daily-usage");
             if (analyticsDailyUsage) {
                 analyticsDailyUsage.innerText = Math.round(todayUsageVol);
@@ -328,15 +342,12 @@
 
         function populateHourlyGraph(hourlyUsageArray) {
             const ctx = document.getElementById('hourlyUsageChart').getContext('2d');
-
-            // Labels 00 to 23
             const labels = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
 
             if (hourlyChartInstance) {
-                hourlyChartInstance.destroy(); // Clear existing chart to redraw
+                hourlyChartInstance.destroy();
             }
 
-            // Create gradient for the area under the curve
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(28, 176, 246, 0.4)');
             gradient.addColorStop(1, 'rgba(28, 176, 246, 0.05)');
@@ -348,18 +359,18 @@
                     datasets: [{
                         label: 'Water Usage (L)',
                         data: hourlyUsageArray,
-                        borderColor: '#1CB0F6', // Duolingo blue
+                        borderColor: '#1CB0F6',
                         backgroundColor: gradient,
                         borderWidth: 4,
                         pointBackgroundColor: '#1CB0F6',
                         pointBorderColor: '#FFFFFF',
                         pointBorderWidth: 2,
                         pointRadius: function (context) {
-                            return context.raw > 0 ? 5 : 0; // Only show dots for > 0
+                            return context.raw > 0 ? 5 : 0;
                         },
                         pointHoverRadius: 7,
                         fill: true,
-                        tension: 0.4 // Cubic bezier smoothing
+                        tension: 0.4
                     }]
                 },
                 options: {
@@ -380,7 +391,7 @@
                             grid: { display: false },
                             ticks: {
                                 callback: function (val, index) {
-                                    return index % 4 === 0 ? labels[index] + 'h' : ''; // Label every 4 hours
+                                    return index % 4 === 0 ? labels[index] + 'h' : '';
                                 },
                                 color: '#A0A0A0',
                                 font: { size: 10, weight: 'bold' }
@@ -406,8 +417,8 @@
             });
         }
 
-        fetchDailyHistory();
-        fetchHourlyHistory();
+        // Initialize dashboard on load
+        window.initializeDashboard(currentDeviceId);
 
         // Simple Tab Switching Logic
         window.switchTab = function (tabName) {
@@ -418,7 +429,6 @@
                 homeView.classList.remove("hidden");
                 analyticsView.classList.add("hidden");
 
-                // Update nav highlighting
                 document.querySelectorAll('.nav-btn-home').forEach(btn => {
                     btn.classList.add('bg-primary/10', 'text-primary');
                     btn.classList.remove('text-text-muted', 'hover:bg-background-light');
@@ -431,7 +441,6 @@
                 homeView.classList.add("hidden");
                 analyticsView.classList.remove("hidden");
 
-                // Update nav highlighting
                 document.querySelectorAll('.nav-btn-analytics').forEach(btn => {
                     btn.classList.add('bg-primary/10', 'text-primary');
                     btn.classList.remove('text-text-muted', 'hover:bg-background-light');
@@ -443,7 +452,173 @@
             }
         }
 
-    </script>
+        // QR Code Scanning logic
+        let html5QrCode = null;
+
+        window.startCameraScan = function() {
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+            }
+            const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+            
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config,
+                (decodedText, decodedResult) => {
+                    handleQrCodeFound(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignore logs to avoid spam
+                }
+            ).catch(err => {
+                console.error("Camera start failed", err);
+                document.getElementById("qr-reader").innerHTML = `
+                    <div class="text-center p-6 text-text-muted flex flex-col items-center">
+                        <span class="material-symbols-outlined text-red-400 text-4xl mb-2">videocam_off</span>
+                        <p class="text-xs font-bold text-text-main">Camera Access Failed</p>
+                        <p class="text-[10px] mt-1">Please allow camera permissions or enter ID manually.</p>
+                    </div>
+                `;
+            });
+        };
+
+        window.stopCameraScan = function() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    console.log("Camera stopped");
+                }).catch(err => console.error("Error stopping camera", err));
+            }
+        };
+
+        function handleQrCodeFound(decodedText) {
+            window.stopCameraScan();
+            
+            let deviceId = decodedText.trim();
+            if (deviceId.startsWith("aqualevel://pair?id=")) {
+                const url = new URL(deviceId.replace("aqualevel://", "http://"));
+                const idParam = url.searchParams.get("id");
+                if (idParam) {
+                    deviceId = idParam;
+                }
+            } else if (deviceId.includes("?id=")) {
+                try {
+                    const urlObj = new URL(deviceId);
+                    const idParam = urlObj.searchParams.get("id");
+                    if (idParam) deviceId = idParam;
+                } catch(e) {}
+            }
+            
+            connectDevice(deviceId);
+        }
+
+        function connectDevice(deviceId) {
+            localStorage.setItem("deviceId", deviceId);
+            
+            document.getElementById("modal-tab-camera").classList.add("hidden");
+            document.getElementById("modal-tab-image").classList.add("hidden");
+            document.getElementById("modal-tab-manual").classList.add("hidden");
+            document.querySelector("#pair-device-modal .flex.bg-background-light").classList.add("hidden");
+            
+            const successState = document.getElementById("modal-success-state");
+            successState.classList.remove("hidden");
+            document.getElementById("success-device-id").innerText = deviceId;
+            
+            window.initializeDashboard(deviceId);
+        }
+
+        window.submitManualDevice = function() {
+            const inputVal = document.getElementById("manual-device-id").value.trim();
+            if (inputVal) {
+                connectDevice(inputVal);
+            } else {
+                alert("Please enter a valid Device ID.");
+            }
+        };
+
+        window.switchModalTab = function(tab) {
+            const cameraTab = document.getElementById("modal-tab-camera");
+            const imageTab = document.getElementById("modal-tab-image");
+            const manualTab = document.getElementById("modal-tab-manual");
+            
+            const btnCamera = document.getElementById("tab-btn-camera");
+            const btnImage = document.getElementById("tab-btn-image");
+            const btnManual = document.getElementById("tab-btn-manual");
+            
+            cameraTab.classList.add("hidden");
+            imageTab.classList.add("hidden");
+            manualTab.classList.add("hidden");
+            
+            [btnCamera, btnImage, btnManual].forEach(btn => {
+                btn.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all text-text-muted hover:text-primary";
+            });
+            
+            if (tab === "camera") {
+                cameraTab.classList.remove("hidden");
+                btnCamera.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white text-primary shadow-sm";
+                window.startCameraScan();
+            } else {
+                window.stopCameraScan();
+                if (tab === "image") {
+                    imageTab.classList.remove("hidden");
+                    btnImage.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white text-primary shadow-sm";
+                } else if (tab === "manual") {
+                    manualTab.classList.remove("hidden");
+                    btnManual.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white text-primary shadow-sm";
+                }
+            }
+        };
+
+        window.openPairModal = function() {
+            const modal = document.getElementById("pair-device-modal");
+            modal.classList.remove("hidden");
+            
+            document.getElementById("modal-tab-camera").classList.remove("hidden");
+            document.getElementById("modal-tab-image").classList.add("hidden");
+            document.getElementById("modal-tab-manual").classList.add("hidden");
+            document.getElementById("modal-success-state").classList.add("hidden");
+            
+            const tabsContainer = document.querySelector("#pair-device-modal .flex.bg-background-light");
+            tabsContainer.classList.remove("hidden");
+            
+            const btnCamera = document.getElementById("tab-btn-camera");
+            const btnImage = document.getElementById("tab-btn-image");
+            const btnManual = document.getElementById("tab-btn-manual");
+            
+            [btnCamera, btnImage, btnManual].forEach(btn => {
+                btn.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all text-text-muted hover:text-primary";
+            });
+            btnCamera.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white text-primary shadow-sm";
+            
+            window.startCameraScan();
+        };
+
+        window.closePairModal = function() {
+            window.stopCameraScan();
+            document.getElementById("pair-device-modal").classList.add("hidden");
+        };
+
+        // File Input Event Listener for local images
+        document.getElementById("qr-image-input").addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const errorDiv = document.getElementById("qr-image-error");
+            errorDiv.classList.add("hidden");
+            
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+            }
+            
+            html5QrCode.scanFile(file, true)
+                .then(decodedText => {
+                    handleQrCodeFound(decodedText);
+                })
+                .catch(err => {
+                    console.error("Image scan failed", err);
+                    errorDiv.innerText = "No valid QR code found in this image. Try another.";
+                    errorDiv.classList.remove("hidden");
+                });
+        });
     </script>
     <style type="text/tailwindcss">
         @layer utilities {
@@ -508,8 +683,8 @@
         </div>
 
         <!-- Add Button (Moved to Bottom of Sidebar for Desktop) -->
-        <button
-            class="relative w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 transform transition-transform hover:scale-105 active:scale-95 mt-auto">
+        <button onclick="openPairModal()"
+            class="relative w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 transform transition-transform hover:scale-105 active:scale-95 mt-auto cursor-pointer">
             <span class="material-symbols-outlined text-2xl">add</span>
         </button>
     </nav>
@@ -549,6 +724,10 @@
                     <span class="text-primary">Water Levels</span> <span
                         class="align-middle text-2xl lg:text-3xl">💧</span>
                 </h1>
+                <div class="flex items-center gap-1.5 mt-2 bg-primary/10 text-primary px-3 py-1 rounded-full w-max text-xs font-bold shadow-sm">
+                    <span class="material-symbols-outlined text-sm font-bold">sensors</span>
+                    <span>Device: <span class="active-device-name">esp32_01</span></span>
+                </div>
             </div>
 
             <!-- Right Side (Search, Notifications, Profile Avatar for Desktop) -->
@@ -895,8 +1074,8 @@
                 class="nav-btn-home flex items-center justify-center w-12 h-12 text-primary transition-colors bg-primary/10 rounded-2xl">
                 <span class="material-symbols-outlined text-2xl">home</span>
             </button>
-            <button
-                class="relative w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 transform transition-transform active:scale-95">
+            <button onclick="openPairModal()"
+                class="relative w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 transform transition-transform active:scale-95 cursor-pointer">
                 <span class="material-symbols-outlined text-2xl">add</span>
             </button>
             <button onclick="switchTab('analytics')"
@@ -908,6 +1087,66 @@
                 <span class="material-symbols-outlined text-2xl">person</span>
             </button>
         </nav>
+    </div>
+
+    <!-- Pair Device Modal -->
+    <div id="pair-device-modal" class="fixed inset-0 bg-text-main/50 backdrop-blur-md flex items-center justify-center z-[100] hidden transition-all duration-300">
+        <div class="bg-surface-light rounded-4xl p-6 md:p-8 w-[90%] max-w-lg shadow-soft border-b-[6px] border-x-2 border-t-2 border-[#E5E5E5] flex flex-col relative max-h-[90vh] overflow-y-auto">
+            <!-- Close Button -->
+            <button onclick="closePairModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full hover:bg-background-light flex items-center justify-center text-text-muted transition-colors cursor-pointer">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+
+            <h2 class="text-2xl font-black text-text-main mb-2 uppercase tracking-wide">Pair New Device</h2>
+            <p class="text-xs lg:text-sm text-text-muted mb-6">Scan QR code or enter Device ID to load your water monitor dashboard</p>
+
+            <!-- Modal Tabs -->
+            <div class="flex bg-background-light p-1 rounded-2xl mb-6">
+                <button id="tab-btn-camera" onclick="switchModalTab('camera')" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white text-primary shadow-sm">Camera</button>
+                <button id="tab-btn-image" onclick="switchModalTab('image')" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all text-text-muted hover:text-primary">Upload QR</button>
+                <button id="tab-btn-manual" onclick="switchModalTab('manual')" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all text-text-muted hover:text-primary">Manual</button>
+            </div>
+
+            <!-- Tab Contents -->
+            <!-- 1. Camera QR Scanner -->
+            <div id="modal-tab-camera" class="flex flex-col items-center justify-center">
+                <div id="qr-reader" class="w-full rounded-2xl overflow-hidden border-2 border-dashed border-primary/40 bg-background-light min-h-[250px] flex items-center justify-center">
+                    <!-- Scanner will be rendered here -->
+                </div>
+                <p class="text-[10px] text-text-muted mt-3 text-center">Point your camera at the QR code label on your AquaLevel device.</p>
+            </div>
+
+            <!-- 2. Image Upload -->
+            <div id="modal-tab-image" class="hidden flex flex-col items-center justify-center py-6 border-2 border-dashed border-primary/40 rounded-2xl bg-background-light">
+                <span class="material-symbols-outlined text-primary text-5xl mb-3">upload_file</span>
+                <p class="text-xs font-bold text-text-main mb-1">Select QR Code Image</p>
+                <p class="text-[10px] text-text-muted mb-4">PNG, JPG, or JPEG format</p>
+                <label class="px-6 py-2.5 bg-primary text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all cursor-pointer">
+                    Choose Image
+                    <input type="file" id="qr-image-input" accept="image/*" class="hidden" />
+                </label>
+                <div id="qr-image-error" class="text-xs text-red-500 mt-2 hidden font-medium"></div>
+            </div>
+
+            <!-- 3. Manual Entry -->
+            <div id="modal-tab-manual" class="hidden flex flex-col gap-4">
+                <div class="flex flex-col gap-2">
+                    <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Device ID</label>
+                    <input type="text" id="manual-device-id" placeholder="e.g. esp32_01" class="w-full px-4 py-3 rounded-2xl bg-background-light border-2 border-duo-border focus:border-primary focus:outline-none text-sm font-semibold" />
+                </div>
+                <button onclick="submitManualDevice()" class="w-full py-3.5 bg-primary text-white text-sm font-black rounded-2xl shadow-lg shadow-primary/30 transform transition-transform hover:scale-105 active:scale-95 uppercase tracking-wider">Connect Device</button>
+            </div>
+            
+            <!-- Success state (hidden by default) -->
+            <div id="modal-success-state" class="hidden flex flex-col items-center justify-center py-8">
+                <div class="w-16 h-16 bg-[#58CC02]/20 text-[#58CC02] rounded-full flex items-center justify-center mb-4">
+                    <span class="material-symbols-outlined text-4xl">check_circle</span>
+                </div>
+                <h3 class="text-lg font-bold text-text-main mb-1">Device Connected!</h3>
+                <p id="success-device-id" class="text-xs text-text-muted font-mono bg-background-light px-3 py-1.5 rounded-lg border border-duo-border mb-4">esp32_01</p>
+                <button onclick="closePairModal()" class="px-6 py-2.5 bg-primary text-white text-xs font-bold rounded-xl shadow-md">Done</button>
+            </div>
+        </div>
     </div>
 
 </body>

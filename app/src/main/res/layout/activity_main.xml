@@ -43,6 +43,24 @@
         </LinearLayout>
 
         <FrameLayout
+            android:id="@+id/addDeviceBtn"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:background="@drawable/bg_icon_rounded"
+            android:elevation="4dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginEnd="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_plus"
+                app:tint="@color/duo_blue" />
+        </FrameLayout>
+
+        <FrameLayout
             android:id="@+id/themeToggle"
             android:layout_width="45dp"
             android:layout_height="45dp"

@@ -40,7 +40,7 @@
                         android:fontFamily="sans-serif-black"
                         android:textStyle="bold" />
 
-                    <com.example.aqualevel.UsageGraphView
+                    <com.aqualevel.app.UsageGraphView
                         android:id="@+id/hourlyUsageGraph"
                         android:layout_width="match_parent"
                         android:layout_height="200dp"
@@ -71,7 +71,7 @@
                     android:elevation="2dp"
                     android:focusable="true">
 
-                    <com.example.aqualevel.CardBackgroundView
+                    <com.aqualevel.app.CardBackgroundView
                         android:id="@+id/bgLevel"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent" />
@@ -145,7 +145,7 @@
                     android:elevation="2dp"
                     android:focusable="true">
 
-                    <com.example.aqualevel.CardBackgroundView
+                    <com.aqualevel.app.CardBackgroundView
                         android:id="@+id/bgUsage"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent" />
@@ -231,7 +231,7 @@
                     android:elevation="2dp"
                     android:focusable="true">
 
-                    <com.example.aqualevel.CardBackgroundView
+                    <com.aqualevel.app.CardBackgroundView
                         android:id="@+id/bgAvg"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent" />
@@ -306,7 +306,7 @@
                     android:elevation="2dp"
                     android:focusable="true">
 
-                    <com.example.aqualevel.CardBackgroundView
+                    <com.aqualevel.app.CardBackgroundView
                         android:id="@+id/bgTime"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent" />

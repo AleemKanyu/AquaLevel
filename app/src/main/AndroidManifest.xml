@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application
         android:name=".AquaLevelApp"
@@ -24,6 +29,27 @@
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+
+
+        <!-- PairDeviceActivity — handles both manual launch and deep links from QR scans -->
+        <activity
+            android:name=".PairDeviceActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+
+            <!-- Deep link: aqualevel://pair?id=AQL-XXXXXXXX -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="pair"
+                    android:scheme="aqualevel" />
             </intent-filter>
         </activity>
 

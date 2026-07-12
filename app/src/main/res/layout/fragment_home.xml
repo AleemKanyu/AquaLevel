@@ -89,22 +89,64 @@
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="330dp"
+                    android:layout_height="350dp"
                     android:layout_gravity="center_horizontal">
 
+                    <!-- Device Switcher Chip (Smaller + Corner margined) -->
+                    <LinearLayout
+                        android:id="@+id/deviceSwitcher"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_gravity="start|top"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_duo_card"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="12dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:src="@drawable/waterwaves"
+                            app:tint="@color/duo_blue"
+                            android:layout_marginEnd="6dp" />
+
+                        <TextView
+                            android:id="@+id/deviceNameLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="My Tank"
+                            android:textColor="@color/duo_text_primary"
+                            android:textSize="12sp"
+                            android:fontFamily="sans-serif-black"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:layout_marginStart="4dp"
+                            android:src="@drawable/ic_trend_arrow"
+                            android:rotation="0"
+                            app:tint="@color/duo_text_secondary" />
+                    </LinearLayout>
+
+                    <!-- Tank Container (Shifted down to bottom of card) -->
                     <FrameLayout
                         android:id="@+id/tankContainer"
                         android:layout_width="200dp"
-                        android:layout_height="300dp"
-                        android:layout_gravity="center"
-                        android:layout_margin="50dp"
+                        android:layout_height="290dp"
+                        android:layout_gravity="bottom|center_horizontal"
+                        android:layout_marginBottom="16dp"
                         android:clipChildren="false"
                         android:clipToPadding="false">
 
-                        <com.example.aqualevel.WaveView
+                        <com.aqualevel.app.WaveView
                             android:id="@+id/waterLevel"
                             android:layout_width="match_parent"
-                            android:layout_height="288dp"
+                            android:layout_height="278dp"
                             android:layout_gravity="bottom"
                             android:layout_marginTop="12dp"
                             android:layout_marginBottom="0dp"

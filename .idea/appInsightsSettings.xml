@@ -9,7 +9,7 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.example.aqualevel_" />
+                  <option name="appId" value="com.aqualevel.app" />
                   <option name="mobileSdkAppId" value="1:1058099888216:android:98471527e6b3304a05ca2d" />
                   <option name="projectId" value="aqualevel-383e2" />
                   <option name="projectNumber" value="1058099888216" />

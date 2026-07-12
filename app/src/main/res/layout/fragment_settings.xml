@@ -30,6 +30,124 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="24dp"/>
 
+            <!-- Device Management Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DEVICE"
+                android:textColor="@color/duo_text_secondary"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="0.05"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="16dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/duo_border"
+                app:cardBackgroundColor="@color/surface_card"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Row 1: Add New Device -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Add New Device"
+                                android:textColor="@color/duo_text_primary"
+                                android:textSize="16sp"
+                                android:fontFamily="sans-serif-bold"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Scan QR code to pair another tank"
+                                android:textColor="@color/duo_text_secondary"
+                                android:textSize="12sp"/>
+                        </LinearLayout>
+
+                        <Button
+                            android:id="@+id/scanDeviceButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="SCAN QR"
+                            android:fontFamily="sans-serif-black"
+                            android:textSize="13sp"
+                            android:background="@drawable/bg_duo_button"
+                            android:textColor="@color/white"
+                            android:paddingHorizontal="20dp"
+                            app:backgroundTint="@null"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/duo_border_light"
+                        android:layout_marginHorizontal="16dp"/>
+
+                    <!-- Row 2: Web Dashboard -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Web Dashboard"
+                                android:textColor="@color/duo_text_primary"
+                                android:textSize="16sp"
+                                android:fontFamily="sans-serif-bold"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="View level monitor on the web"
+                                android:textColor="@color/duo_text_secondary"
+                                android:textSize="12sp"/>
+                        </LinearLayout>
+
+                        <Button
+                            android:id="@+id/openWebDashboardButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="OPEN WEB"
+                            android:fontFamily="sans-serif-black"
+                            android:textSize="13sp"
+                            android:background="@drawable/bg_duo_button_secondary"
+                            android:textColor="@color/duo_text_primary"
+                            android:paddingHorizontal="20dp"
+                            app:backgroundTint="@null"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Profile Section -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -47,7 +165,7 @@
                     app:strokeWidth="0dp"
                     app:cardBackgroundColor="@color/duo_blue_light">
                         
-                    <com.example.aqualevel.WaveView
+                    <com.aqualevel.app.WaveView
                         android:id="@+id/profileWaveView"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
