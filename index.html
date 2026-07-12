@@ -72,9 +72,9 @@
         const waterFillUI = document.getElementById("water-fill-ui");
 
         // Calibration Constants (Default)
-        const emptyDistance = 130.0;
-        const fullDistance = 20.0;
-        const tankVolume = 2000.0; // Liters
+        let emptyDistance = 130.0;
+        let fullDistance = 20.0;
+        let tankVolume = 2000.0; // Liters
 
         let currentLiveDistance = -1;
         let todayBaseUsageDist = 0;
@@ -105,6 +105,12 @@
             unsubscribeLive = onSnapshot(sensorDataRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
+                    
+                    // Load calibration settings if defined and non-zero
+                    if (data.dempty && Number(data.dempty) > 0) emptyDistance = Number(data.dempty);
+                    if (data.dfull && Number(data.dfull) > 0) fullDistance = Number(data.dfull);
+                    if (data.capacityLiters && Number(data.capacityLiters) > 0) tankVolume = Number(data.capacityLiters);
+
                     const distance = data.distance || 0;
                     currentLiveDistance = distance;
 
