@@ -17,13 +17,13 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: "#5FA7A7",
+                        primary: "#1CB0F6",
                         secondary: "#A1C9F1",
-                        highlight: "#8EDBA3",
+                        highlight: "#58CC02",
                         "background-light": "#F0F7FA",
                         "surface-light": "#FFFFFF",
-                        "text-main": "#334155",
-                        "text-muted": "#64748B"
+                        "text-main": "#4B4B4B",
+                        "text-muted": "#777777"
                     },
                     fontFamily: {
                         display: "Inter"
@@ -36,10 +36,10 @@
                         full: "9999px"
                     },
                     boxShadow: {
-                        soft: "0 10px 40px -10px rgba(95, 167, 167, 0.1)",
+                        soft: "0 10px 40px -10px rgba(28, 176, 246, 0.1)",
                         nav: "0 20px 25px -5px rgba(51, 65, 85, 0.2)",
                         glow: "0 0 30px rgba(142, 219, 163, 0.2)",
-                        tank: "0 30px 70px -10px rgba(95, 167, 167, 0.55), 0 15px 30px -10px rgba(95, 167, 167, 0.3)"
+                        tank: "0 30px 70px -10px rgba(28, 176, 246, 0.55), 0 15px 30px -10px rgba(28, 176, 246, 0.3)"
                     }
                 }
             }
@@ -251,12 +251,12 @@
 
                 if (i === 6) {
                     labelUI.className = "text-[10px] lg:text-xs font-bold";
-                    labelUI.style.color = "#5FA7A7";
-                    barUI.style.backgroundColor = "#5FA7A7";
+                    labelUI.style.color = "#1CB0F6";
+                    barUI.style.backgroundColor = "#1CB0F6";
                     tooltipUI.className = "absolute -top-8 left-1/2 -translate-x-1/2 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-20 font-bold shadow-md";
-                    tooltipUI.style.backgroundColor = "#5FA7A7";
+                    tooltipUI.style.backgroundColor = "#1CB0F6";
                     barContainerUI.className = "w-full rounded-lg relative h-full overflow-hidden";
-                    barContainerUI.style.backgroundColor = "rgba(95,167,167,0.12)";
+                    barContainerUI.style.backgroundColor = "rgba(28,176,246,0.12)";
                 } else {
                     labelUI.className = "text-[10px] lg:text-xs font-medium";
                     labelUI.style.color = "#64748B";
@@ -634,7 +634,7 @@
                 -webkit-backdrop-filter: blur(12px);
             }
             .water-fill {
-                background: linear-gradient(180deg, #7BBFBF 0%, #5FA7A7 100%);
+                background: linear-gradient(180deg, #57C7FF 0%, #1CB0F6 100%);
             }
             .tank-silhouette {
                 background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.4) 100%);
@@ -966,7 +966,7 @@
                                 class="w-full bg-background-light rounded-lg relative h-full group-hover:bg-background-light/70 transition-colors">
                                 <div id="bar-ui-6"
                                     class="absolute bottom-0 left-0 w-full rounded-lg transition-all duration-500"
-                                    style="height: 0%; background-color: #5FA7A7">
+                                    style="height: 0%; background-color: #1CB0F6">
                                     <div id="bar-tooltip-6"
                                         class="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block z-10">
                                         0 L</div>
