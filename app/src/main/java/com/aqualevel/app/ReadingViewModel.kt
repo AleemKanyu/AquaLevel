@@ -1,6 +1,7 @@
 package com.aqualevel.app
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.asLiveData
@@ -8,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 
 /**
  * ViewModel for managing and providing water level reading data to the UI.
@@ -141,15 +143,26 @@ class ReadingViewModel(application: Application) : AndroidViewModel(application)
     private fun startRealtimeUpdates(deviceId: String) {
         realtimeJob?.cancel()
         realtimeJob = viewModelScope.launch {
-            repository.realtimeReadingsFlow(deviceId).collect { reading ->
-                // Insert the new raw reading directly into Room DB
-                // LiveData observers will fire immediately — no network roundtrip needed
-                repository.insert(
-                    Readings(
-                        level = reading.distanceCm,
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+            var delayMs = 2000L
+            while (isActive) {
+                try {
+                    repository.realtimeReadingsFlow(deviceId).collect { reading ->
+                        // Reset backoff delay on successful emission
+                        delayMs = 2000L
+                        // Insert the new raw reading directly into Room DB
+                        // LiveData observers will fire immediately — no network roundtrip needed
+                        repository.insert(
+                            Readings(
+                                level = reading.distanceCm,
+                                timestamp = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e("ReadingViewModel", "Realtime updates failed for device $deviceId, retrying in ${delayMs}ms", e)
+                    kotlinx.coroutines.delay(delayMs)
+                    delayMs = (delayMs * 2).coerceAtMost(30000L) // Exponential backoff up to 30s
+                }
             }
         }
     }
