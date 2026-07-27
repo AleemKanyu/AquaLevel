@@ -29,7 +29,7 @@ jobs:
       - name: Add iOS Platform & Sync Capacitor
         run: |
           npx cap add ios || true
-          npx cap sync ios
+          npm run sync
           if [ -d "ios/App" ]; then
             cd ios/App
             pod install || pod install --repo-update || true
@@ -53,6 +53,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_STYLE="Manual" \
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER=""
