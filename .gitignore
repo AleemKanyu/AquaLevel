@@ -17,3 +17,9 @@ local.properties
 # Secrets
 /app/google-services.json
 Esp32Code/secrets.h
+
+# Node & Capacitor
+node_modules/
+www/
+app/release/
+

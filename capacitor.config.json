@@ -1,0 +1,14 @@
+{
+  "appId": "com.example.aqualevel",
+  "appName": "AquaLevel",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
