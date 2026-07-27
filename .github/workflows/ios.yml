@@ -30,23 +30,43 @@ jobs:
         run: |
           npx cap add ios || true
           npx cap sync ios
+          if [ -d "ios/App" ]; then
+            cd ios/App
+            pod install || pod install --repo-update || true
+            cd ../..
+          fi
 
       - name: Build Xcode Archive (Unsigned)
         run: |
+          if [ -d "ios/App/App.xcworkspace" ]; then
+            TARGET_ARG="-workspace ios/App/App.xcworkspace"
+          else
+            TARGET_ARG="-project ios/App/App.xcodeproj"
+          fi
+
           xcodebuild archive \
-            -workspace ios/App/App.xcworkspace \
+            $TARGET_ARG \
             -scheme App \
             -configuration Release \
-            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -archivePath build/App.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
       - name: Package Unsigned IPA
         run: |
           mkdir -p build/Payload
-          cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/
+          APP_PATH=$(find build/App.xcarchive -name "*.app" -type d | head -n 1)
+          echo "Found app bundle at: $APP_PATH"
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: App bundle not found in archive!"
+            exit 1
+          fi
+          cp -R "$APP_PATH" build/Payload/
           cd build
           zip -r AquaLevel-unsigned.ipa Payload
           ls -lh AquaLevel-unsigned.ipa
